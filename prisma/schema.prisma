@@ -5,7 +5,6 @@
 datasource db {
   provider  = "postgresql"
   url  	    = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -46,4 +45,104 @@ model User {
   password     String?
   role          UserRole @default(USER)
   accounts      Account[]
+  shops         Shop[]
+  bookings  Booking[]
+  isTwoFactorEnabled Boolean @default(false)
+  twoFactorConfirmation TwoFactorConfirmation?
+}
+
+model VerificationToken {
+  id       String   @id @default(cuid())
+  email   String
+  token   String @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id       String   @id @default(cuid())
+  email   String
+  token   String @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model TwoFactorToken {
+  id       String   @id @default(cuid())
+  email   String
+  token   String @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model TwoFactorConfirmation {
+  id       String   @id @default(cuid())
+  userId   String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId])
+}
+
+model Shop {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String?
+  mail        String?
+  address     String?
+  schedule    String?
+  image       String?
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId     String
+  workers     Worker[]
+}
+
+enum WorkerStatus {
+  ACTIVE
+  INACTIVE
+  UNASSIGNED
+}
+
+
+model Worker {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String?
+  mail        String?
+  avatar      String?
+  status      WorkerStatus @default(UNASSIGNED)
+  shop        Shop?     @relation(fields: [shopId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  shopId      String?
+  // Nueva relación
+  services    Service[] @relation("WorkerToService")
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  ownerId     String
+  name        String
+  description String?
+  image       String?
+  bookings    Booking[]
+  price       Float
+  duration    Int
+  // Nueva relación
+  workers     Worker[] @relation("WorkerToService")
+}
+
+model Booking {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  serviceId  String
+  service    Service   @relation(fields: [serviceId], references: [id])
+  date       DateTime
+  status     String    @default("pending")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }

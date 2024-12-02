@@ -1,7 +1,6 @@
 import { Poppins } from "next/font/google"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { LoginButton } from "@/components/auth/login-button"
+import { Scissors } from "lucide-react"
+import BookingForm from "@/components/booking/booking-form"
 
 
 const font = Poppins({ subsets: ["latin"], weight:["600"] })
@@ -9,23 +8,21 @@ const font = Poppins({ subsets: ["latin"], weight:["600"] })
 
 export default async function Home() {
   return (
-    <main className="flex h-full flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-400 to-blue-800">
-      <div className="space-y-6 text-center">
-        <h1 className={cn("text-6xl font-semibold text-white drop-shadow-md",
-        font.className)}>
-        🔐 Auth
-        </h1>
-        <p className="text-white text-lg">
-          Servicio de auth
-        </p>
-        <div className="">
-        <LoginButton> 
-          <Button variant="secondary" size="lg">
-            Iniciar sesión
-          </Button>
-        </LoginButton>
+    <main className="min-h-screen p-4 md:p-8">
+    <div className="mx-auto max-w-4xl">
+      <div className="mb-8 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Scissors className="h-8 w-8 text-primary animate-[spin_3s_ease-in-out_infinite]" />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-blue-600 text-transparent bg-clip-text">
+            3BS Barbershop
+          </h1>
         </div>
+        <p className="text-muted-foreground text-lg">
+          Reserva tu hora en pocos pasos
+        </p>
       </div>
-    </main>
+      <BookingForm />
+    </div>
+  </main>
   )
 }

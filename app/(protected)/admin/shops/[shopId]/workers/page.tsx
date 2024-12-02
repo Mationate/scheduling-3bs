@@ -39,7 +39,7 @@ export default async function ShopWorkersPage({
           <InfoIcon className="h-4 w-4" />
           <AlertDescription>
             Aquí puedes gestionar los trabajadores asignados a esta tienda. 
-            Solo los trabajadores con estado "Activo" y sin asignación previa estarán disponibles para ser agregados.
+            Solo los trabajadores con estado &rdquo;Activo&rdquo; y sin asignación previa estarán disponibles para ser agregados.
           </AlertDescription>
         </Alert>
 

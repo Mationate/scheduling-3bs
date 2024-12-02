@@ -87,9 +87,9 @@ export function ManageWorkers({
       <div className="bg-slate-100 p-4 rounded-lg">
         <h3 className="font-medium mb-2">¿Cómo funciona?</h3>
         <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-          <li>Solo puedes asignar trabajadores que estén en estado "Activo"</li>
+          <li>Solo puedes asignar trabajadores que estén en estado &rdquo;Activo&rdquo;</li>
           <li>Un trabajador solo puede estar asignado a una tienda a la vez</li>
-          <li>Al remover un trabajador, su estado vuelve a "Sin Asignar"</li>
+          <li>Al remover un trabajador, su estado vuelve a &rdquo;Sin Asignar&rdquo;</li>
           <li>Los cambios se aplican inmediatamente</li>
         </ul>
       </div>

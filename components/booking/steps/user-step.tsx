@@ -2,90 +2,160 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 
-export default function UserStep({ onNext, onBack, updateBookingData }: any) {
-  const [phone, setPhone] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [step, setStep] = useState<"phone" | "verify">("phone");
+const formSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido"),
+  phone: z.string().min(1, "El teléfono es requerido"),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  notes: z.string().optional(),
+});
 
-  const handleSendCode = () => {
-    // Simulate sending verification code
-    toast.success("Verification code sent!");
-    setStep("verify");
-  };
+type UserFormValues = z.infer<typeof formSchema>;
 
-  const handleVerify = () => {
-    // Simulate verification
-    if (verificationCode === "1234") {
-      updateBookingData({
-        user: {
-          phone,
-          verified: true,
-        },
-      });
-      onNext();
-    } else {
-      toast.error("Invalid verification code");
-    }
+interface UserStepProps {
+  onNext: () => void;
+  onBack: () => void;
+  updateBookingData: (data: { user: UserFormValues }) => void;
+}
+
+export default function UserStep({
+  onNext,
+  onBack,
+  updateBookingData,
+}: UserStepProps) {
+  const [loading, setLoading] = useState(false);
+
+  const form = useForm<UserFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      phone: "",
+      email: "",
+      notes: "",
+    },
+  });
+
+  const onSubmit = async (data: UserFormValues) => {
+    setLoading(true);
+    updateBookingData({ user: data });
+    setLoading(false);
+    onNext();
   };
 
   return (
-    <div className="max-w-md mx-auto space-y-6">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold mb-4">Verify Your Phone Number</h2>
-        {step === "phone" ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+1 234 567 8900"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={handleSendCode}
-              disabled={!phone}
-              className="w-full"
-            >
-              Send Verification Code
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Enter Verification Code</Label>
-              <Input
-                id="code"
-                type="text"
-                placeholder="1234"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Use code "1234" for demo purposes
-              </p>
-            </div>
-            <Button
-              onClick={handleVerify}
-              disabled={!verificationCode}
-              className="w-full"
-            >
-              Verify Code
-            </Button>
-          </div>
-        )}
-      </div>
+        <h2 className="text-xl font-semibold mb-4">Tus Datos</h2>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="p-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre Completo</FormLabel>
+                        <FormControl>
+                          <Input 
+                            disabled={loading} 
+                            placeholder="Tu nombre completo" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>
-          Back
-        </Button>
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Teléfono</FormLabel>
+                        <FormControl>
+                          <Input 
+                            disabled={loading} 
+                            placeholder="Tu número de teléfono" 
+                            type="tel"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem className="col-span-full">
+                        <FormLabel>Email (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            disabled={loading} 
+                            placeholder="Tu correo electrónico" 
+                            type="email"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem className="col-span-full">
+                        <FormLabel>Notas Adicionales (Opcional)</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            disabled={loading} 
+                            placeholder="Cualquier información adicional que quieras compartir"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="flex justify-between">
+                  <Button type="button" variant="outline" onClick={onBack}>
+                    Volver
+                  </Button>
+                  <Button type="submit" disabled={loading}>
+                    Continuar
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </Card>
+        </motion.div>
       </div>
     </div>
   );

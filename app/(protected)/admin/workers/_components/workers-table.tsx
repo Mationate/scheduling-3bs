@@ -13,43 +13,54 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
-interface ShopData {
+interface WorkerData {
   id: string;
   name: string;
   phone: string;
   mail: string;
-  address: string;
-  workersCount: number;
+  avatar: string;
+  status: string;
+  shopName: string;
   createdAt: string;
 }
 
-interface ShopsDataTableProps {
-  initialData: ShopData[];
+interface WorkersDataTableProps {
+  initialData: WorkerData[];
 }
 
-export function WorkersDataTable({ initialData }: ShopsDataTableProps) {
+export function WorkersDataTable({ initialData }: WorkersDataTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [data, setData] = useState(initialData);
 
-  const filteredData = data.filter(shop => 
-    shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    shop.mail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    shop.address.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredData = data.filter(worker => 
+    worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    worker.mail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    worker.shopName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const columns = [
-    { header: "Name", accessorKey: "name" },
-    { header: "Phone", accessorKey: "phone" },
+    { header: "Nombre", accessorKey: "name" },
+    { header: "Teléfono", accessorKey: "phone" },
     { header: "Email", accessorKey: "mail" },
-    { header: "Address", accessorKey: "address" },
-    { header: "Workers", accessorKey: "workersCount" },
-    { header: "Created", accessorKey: "createdAt" },
+    { 
+      header: "Estado", 
+      accessorKey: "status",
+      cell: (row: WorkerData) => (
+        <Badge variant={row.status === "UNASSIGNED" ? "destructive" : "default"}>
+          {row.status === "UNASSIGNED" ? "Sin Asignar" : 
+           row.status === "ACTIVE" ? "Activo" : "Inactivo"}
+        </Badge>
+      )
+    },
+    { header: "Tienda", accessorKey: "shopName" },
+    { header: "Creado", accessorKey: "createdAt" },
     {
-      header: "Actions",
+      header: "Acciones",
       id: "actions",
-      cell: (row: ShopData) => (
+      cell: (row: WorkerData) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -57,46 +68,49 @@ export function WorkersDataTable({ initialData }: ShopsDataTableProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => router.push(`/admin/shops/${row.id}`)}>
-              View details
+            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => router.push(`/admin/workers/${row.id}`)}>
+              Ver detalles
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push(`/admin/shops/${row.id}/edit`)}>
-              Edit
+            <DropdownMenuItem onClick={() => router.push(`/admin/workers/${row.id}/edit`)}>
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push(`/admin/workers/${row.id}/services`)}>
+              Gestionar Servicios
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={async () => {
-                if (confirm("Are you sure you want to delete this shop?")) {
-                  const res = await fetch(`/api/shops/${row.id}`, {
+                if (confirm("¿Estás seguro de que quieres eliminar este trabajador?")) {
+                  const res = await fetch(`/api/workers/${row.id}`, {
                     method: "DELETE"
                   });
                   if (res.ok) {
-                    setData(prev => prev.filter(shop => shop.id !== row.id));
+                    setData(prev => prev.filter(worker => worker.id !== row.id));
                     router.refresh();
                   }
                 }
               }}
               className="text-red-600"
             >
-              Delete
+              Eliminar
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
     }
-  ] satisfies Column<ShopData>[];
+  ] satisfies Column<WorkerData>[];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Input
-          placeholder="Search shops..."
+          placeholder="Buscar trabajadores..."
           className="max-w-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <Button onClick={() => router.push("/admin/shops/new")}>
-          <Plus className="mr-2 h-4 w-4" /> Add Shop
+        <Button onClick={() => router.push("/admin/workers/new")}>
+          <Plus className="mr-2 h-4 w-4" /> Agregar Trabajador
         </Button>
       </div>
       <DataTable

@@ -8,6 +8,7 @@ import LocationStep from "./steps/location-step";
 import ServicesStep from "./steps/services-step";
 import UserStep from "./steps/user-step";
 import ConfirmationStep from "./steps/confirmation-step";
+import { Shop, Worker, Service } from "@prisma/client";
 
 const steps = [
   { id: 1, name: "Local" },
@@ -16,14 +17,43 @@ const steps = [
   { id: 4, name: "Confirmación" },
 ];
 
-export default function BookingForm() {
+type ShopWithRelations = Shop & {
+  workers: (Worker & {
+    services: Service[]
+  })[];
+};
+
+interface BookingFormProps {
+  initialData: ShopWithRelations[];
+}
+
+type BookingData = {
+  location: Shop & {
+    workers: (Worker & {
+      services: Service[]
+    })[];
+  };
+  service: Service;
+  staff: Worker;
+  user: {
+    name: string;
+    phone: string;
+    email?: string;
+    notes?: string;
+  };
+  date: Date | null;
+  time: string | null;
+};
+
+export default function BookingForm({ initialData }: BookingFormProps) {
   const [currentStep, setCurrentStep] = useState(1);
-  const [bookingData, setBookingData] = useState({
-    location: null,
-    service: null,
-    staff: null,
-    user: null,
-    date: null,
+  const [bookingData, setBookingData] = useState<Partial<BookingData>>({
+    location: undefined,
+    service: undefined,
+    staff: undefined,
+    user: undefined,
+    date: undefined,
+    time: undefined,
   });
 
   const progress = (currentStep / steps.length) * 100;
@@ -36,8 +66,8 @@ export default function BookingForm() {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const updateBookingData = (data: any) => {
-    setBookingData((prev) => ({ ...prev, ...data }));
+  const updateBookingData = (data: Partial<typeof bookingData>) => {
+    setBookingData(prev => ({ ...prev, ...data }));
   };
 
   return (
@@ -75,15 +105,15 @@ export default function BookingForm() {
             <LocationStep
               onNext={handleNext}
               updateBookingData={updateBookingData}
+              locations={initialData}
             />
           )}
-          {currentStep === 2 && (
+          {currentStep === 2 && bookingData.location && (
             <ServicesStep
               onNext={handleNext}
               onBack={handleBack}
               updateBookingData={updateBookingData}
-              locationId={bookingData.location}
-              selectedLocation={bookingData.location}
+              location={bookingData.location}
             />
           )}
           {currentStep === 3 && (
@@ -93,10 +123,18 @@ export default function BookingForm() {
               updateBookingData={updateBookingData}
             />
           )}
-          {currentStep === 4 && (
+          {currentStep === 4 && bookingData.location && bookingData.service && 
+           bookingData.staff && bookingData.user && (
             <ConfirmationStep
               onBack={handleBack}
-              bookingData={bookingData}
+              bookingData={{
+                location: bookingData.location,
+                service: bookingData.service,
+                staff: bookingData.staff,
+                user: bookingData.user,
+                date: bookingData.date ?? null,
+                time: bookingData.time ?? null,
+              }}
             />
           )}
         </motion.div>

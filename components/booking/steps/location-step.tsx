@@ -6,38 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MapPin, Phone, Clock, ExternalLink, Scissors, Check } from "lucide-react";
 import { motion } from "framer-motion";
+import { Shop, Worker, Service } from "@prisma/client";
 
-const locations = [
-  {
-    id: "1",
-    name: "3BS Manquehue",
-    address: "Av. Manquehue Sur 329, Las Condes",
-    phone: "+56 9 5555 5555",
-    image: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=800&auto=format&fit=crop&q=60",
-    schedule: "Lun-Sáb: 9:00-20:00, Dom: 10:00-18:00",
-    mapUrl: "https://maps.google.com",
-    description: "Ubicado en el corazón de Las Condes, nuestro local insignia ofrece un ambiente moderno y acogedor. Contamos con estacionamiento gratuito y fácil acceso desde el metro Manquehue.",
-    services: ["Corte de Cabello", "Afeitado", "Tratamientos Capilares"],
-    amenities: ["WiFi Gratis", "Café de Cortesía", "Estacionamiento"],
-  },
-  {
-    id: "2",
-    name: "3BS Ñuñoa",
-    address: "Av. Irarrázaval 3665, Ñuñoa",
-    phone: "+56 9 5555 5556",
-    image: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&auto=format&fit=crop&q=60",
-    schedule: "Lun-Sáb: 10:00-21:00, Dom: Cerrado",
-    mapUrl: "https://maps.google.com",
-    description: "Nuestro local en Ñuñoa combina el estilo tradicional con toques modernos. Ubicado en pleno barrio gastronómico, perfecto para combinar tu corte con un buen café o almuerzo.",
-    services: ["Corte de Cabello", "Afeitado", "Coloración"],
-    amenities: ["WiFi Gratis", "Café de Cortesía", "Zona de Espera Premium"],
-  },
-];
+type ShopWithRelations = Shop & {
+  workers: (Worker & {
+    services: Service[]
+  })[];
+};
 
-export default function LocationStep({ onNext, updateBookingData }: any) {
-  const [selectedLocation, setSelectedLocation] = useState<any>(null);
+interface LocationStepProps {
+  locations: ShopWithRelations[];
+  onNext: () => void;
+  updateBookingData: (data: { location: ShopWithRelations }) => void;
+}
 
-  const handleSelect = (location: any) => {
+export default function LocationStep({ locations, onNext, updateBookingData }: LocationStepProps) {
+  const [selectedLocation, setSelectedLocation] = useState<ShopWithRelations | null>(null);
+
+  const handleSelect = (location: ShopWithRelations) => {
     setSelectedLocation(location);
     updateBookingData({ location });
   };
@@ -62,7 +48,7 @@ export default function LocationStep({ onNext, updateBookingData }: any) {
             >
               <div className="relative h-48 mb-4 rounded-md overflow-hidden">
                 <Image
-                  src={location.image}
+                  src={location.image || "/placeholder-shop.jpg"}
                   alt={location.name}
                   fill
                   className="object-cover transition-transform duration-300 hover:scale-110"
@@ -74,14 +60,18 @@ export default function LocationStep({ onNext, updateBookingData }: any) {
                   <MapPin className="h-4 w-4 text-primary" />
                   <span>{location.address}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-primary" />
-                  <span>{location.phone}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <span>{location.schedule}</span>
-                </div>
+                {location.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-primary" />
+                    <span>{location.phone}</span>
+                  </div>
+                )}
+                {location.schedule && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span>{location.schedule}</span>
+                  </div>
+                )}
               </div>
             </Card>
           </motion.div>
@@ -96,44 +86,51 @@ export default function LocationStep({ onNext, updateBookingData }: any) {
         >
           <Card className="p-4 bg-primary/5">
             <h3 className="text-lg font-semibold mb-3">Información Detallada</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {selectedLocation.description}
-            </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <h4 className="font-medium mb-2">Servicios Disponibles</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  {selectedLocation.services.map((service: string) => (
-                    <li key={service} className="flex items-center gap-2">
+                  {Array.from(new Set(selectedLocation.workers.flatMap(worker => 
+                    worker.services.map(service => service.name)
+                  ))).map((serviceName) => (
+                    <li key={serviceName} className="flex items-center gap-2">
                       <Scissors className="h-3 w-3 text-primary" />
-                      {service}
+                      {serviceName}
                     </li>
                   ))}
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium mb-2">Comodidades</h4>
+                <h4 className="font-medium mb-2">Información Adicional</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  {selectedLocation.amenities.map((amenity: string) => (
-                    <li key={amenity} className="flex items-center gap-2">
-                      <Check className="h-3 w-3 text-primary" />
-                      {amenity}
-                    </li>
-                  ))}
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3 w-3 text-primary" />
+                    {selectedLocation.workers.length} profesionales disponibles
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3 w-3 text-primary" />
+                    WiFi Gratis
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3 w-3 text-primary" />
+                    Aire Acondicionado
+                  </li>
                 </ul>
               </div>
             </div>
-            <div className="mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={() => window.open(selectedLocation.mapUrl, '_blank')}
-              >
-                <MapPin className="h-3 w-3 mr-1" />
-                Ver en Google Maps
-              </Button>
-            </div>
+            {selectedLocation.address && (
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => window.open(`https://maps.google.com/maps?q=${encodeURIComponent(selectedLocation.address ?? '')}`, '_blank')}
+                >
+                  <MapPin className="h-3 w-3 mr-1" />
+                  Ver en Google Maps
+                </Button>
+              </div>
+            )}
           </Card>
         </motion.div>
       )}

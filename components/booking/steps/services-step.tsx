@@ -3,142 +3,182 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Clock, Scissors } from "lucide-react";
+import { Clock, DollarSign, User } from "lucide-react";
+import { motion } from "framer-motion";
+import { Shop, Worker, Service } from "@prisma/client";
+import { formatPrice } from "@/lib/utils";
 
-const services = [
-  {
-    id: "1",
-    name: "Classic Haircut",
-    description: "Traditional haircut with styling",
-    price: 30,
-    duration: 30,
-  },
-  {
-    id: "2",
-    name: "VIP Package",
-    description: "Haircut, beard trim, and hot towel treatment",
-    price: 50,
-    duration: 60,
-  },
-  {
-    id: "3",
-    name: "Full Package",
-    description: "VIP package plus head massage and styling products",
-    price: 75,
-    duration: 90,
-  },
-];
+type ShopWithRelations = Shop & {
+  workers: (Worker & {
+    services: Service[]
+  })[];
+};
 
-const staff = [
-  {
-    id: "1",
-    name: "John Smith",
-    image: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=800&auto=format&fit=crop&q=60",
-    bio: "Master barber with 10 years of experience",
-  },
-  {
-    id: "2",
-    name: "Sarah Johnson",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&auto=format&fit=crop&q=60",
-    bio: "Specializes in modern cuts and styling",
-  },
-];
+interface ServicesStepProps {
+  location: ShopWithRelations;
+  onNext: () => void;
+  onBack: () => void;
+  updateBookingData: (data: { service: Service; staff: Worker }) => void;
+}
 
-export default function ServicesStep({ onNext, onBack, updateBookingData, locationId }: any) {
-  const [selectedService, setSelectedService] = useState<any>(null);
-  const [selectedStaff, setSelectedStaff] = useState<any>(null);
+export default function ServicesStep({
+  location,
+  onNext,
+  onBack,
+  updateBookingData,
+}: ServicesStepProps) {
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<Worker | null>(null);
 
-  const handleServiceSelect = (service: any) => {
+  // Obtener servicios únicos de todos los trabajadores
+  const uniqueServices = Array.from(
+    new Map(
+      location.workers.flatMap(worker => 
+        worker.services.map(service => [service.id, service])
+      )
+    ).values()
+  );
+
+  // Obtener trabajadores que pueden realizar el servicio seleccionado
+  const availableStaff = selectedService
+    ? location.workers.filter(worker =>
+        worker.services.some(service => service.id === selectedService.id)
+      )
+    : [];
+
+  const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
-    updateBookingData({ service });
+    setSelectedStaff(null); // Resetear el staff al cambiar de servicio
   };
 
-  const handleStaffSelect = (staff: any) => {
+  const handleStaffSelect = (staff: Worker) => {
     setSelectedStaff(staff);
-    updateBookingData({ staff });
   };
 
-  const handleContinue = () => {
-    updateBookingData({ staff: selectedStaff });
-    onNext();
+  const handleNext = () => {
+    if (selectedService && selectedStaff) {
+      updateBookingData({ service: selectedService, staff: selectedStaff });
+      onNext();
+    }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold mb-4">Select a Service</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {services.map((service) => (
-            <Card
+        <h2 className="text-xl font-semibold mb-4">Selecciona el Servicio</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {uniqueServices.map((service) => (
+            <motion.div
               key={service.id}
-              className={`p-4 cursor-pointer transition-all ${
-                selectedService?.id === service.id
-                  ? "ring-2 ring-primary"
-                  : "hover:shadow-md"
-              }`}
-              onClick={() => handleServiceSelect(service)}
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <Scissors className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold">{service.name}</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                {service.description}
-              </p>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{service.duration} min</span>
+              <Card
+                className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
+                  selectedService?.id === service.id
+                    ? "ring-2 ring-primary bg-primary/5"
+                    : ""
+                }`}
+                onClick={() => handleServiceSelect(service)}
+              >
+                <h3 className="text-lg font-semibold mb-2">{service.name}</h3>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span>{service.duration} minutos</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    <span>{formatPrice(service.price)}</span>
+                  </div>
+                  {service.description && (
+                    <p className="mt-2 text-sm">{service.description}</p>
+                  )}
                 </div>
-                <span className="font-semibold">${service.price}</span>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
           ))}
         </div>
       </div>
 
       {selectedService && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Choose Your Stylist (Optional)</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {staff.map((person) => (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Selecciona el Profesional</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                // Seleccionar un trabajador aleatorio que pueda realizar el servicio
+                const randomIndex = Math.floor(Math.random() * availableStaff.length);
+                setSelectedStaff({
+                  id: "any",
+                  name: "Cualquier Profesional",
+                  phone: null,
+                  mail: null,
+                  avatar: null,
+                  status: "ACTIVE",
+                  shopId: location.id,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                } as Worker);
+              }}
+              className={selectedStaff?.id === "any" ? "bg-primary/10" : ""}
+            >
+              Cualquier Profesional
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {availableStaff.map((staff) => (
               <Card
-                key={person.id}
-                className={`p-4 cursor-pointer transition-all ${
-                  selectedStaff?.id === person.id
-                    ? "ring-2 ring-primary"
-                    : "hover:shadow-md"
+                key={staff.id}
+                className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
+                  selectedStaff?.id === staff.id
+                    ? "ring-2 ring-primary bg-primary/5"
+                    : ""
                 }`}
-                onClick={() => handleStaffSelect(person)}
+                onClick={() => handleStaffSelect(staff)}
               >
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={person.image} alt={person.name} />
-                    <AvatarFallback>{person.name[0]}</AvatarFallback>
-                  </Avatar>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-6 w-6 text-primary" />
+                  </div>
                   <div>
-                    <h3 className="font-semibold">{person.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {person.bio}
-                    </p>
+                    <h3 className="font-medium">{staff.name}</h3>
+                    <p className="text-sm text-muted-foreground">Profesional</p>
                   </div>
                 </div>
               </Card>
             ))}
           </div>
-        </div>
+          {selectedStaff?.id === "any" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-4 p-4 bg-primary/5 rounded-lg"
+            >
+              <p className="text-sm text-muted-foreground">
+                Se te asignará automáticamente un profesional disponible para el horario que selecciones.
+                Todos nuestros profesionales están altamente capacitados para brindarte el mejor servicio.
+              </p>
+            </motion.div>
+          )}
+        </motion.div>
       )}
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
-          Back
+          Volver
         </Button>
         <Button
-          onClick={handleContinue}
-          disabled={!selectedService}
+          onClick={handleNext}
+          disabled={!selectedService || !selectedStaff}
+          className="bg-primary hover:bg-primary/90"
         >
-          Continue
+          Continuar
         </Button>
       </div>
     </div>

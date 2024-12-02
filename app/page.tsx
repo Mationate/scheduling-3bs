@@ -13,7 +13,9 @@ export default async function Home() {
         include: {
           services: true
         }
-      }
+      },
+      schedules: true,
+      breaks: true,
     }
   });
 

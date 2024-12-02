@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -11,7 +11,8 @@ import { CalendarIcon, MapPin, Clock, User, Scissors, Mail, Phone, AlertCircle }
 import { motion } from "framer-motion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatPrice } from "@/lib/utils";
-import { Shop, Worker, Service } from "@prisma/client";
+import { Shop, Worker, Service, ShopSchedule, ShopBreak } from "@prisma/client";
+import { addMinutes, isBefore, isAfter, setHours, setMinutes, isSameDay } from "date-fns";
 
 const timeSlots = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -21,7 +22,10 @@ const timeSlots = [
 ];
 
 type BookingData = {
-  location: Shop;
+  location: Shop & {
+    schedules: ShopSchedule[];
+    breaks: ShopBreak[];
+  };
   service: Service;
   staff: Worker;
   user: {
@@ -42,7 +46,77 @@ interface ConfirmationStepProps {
 export default function ConfirmationStep({ onBack, bookingData }: ConfirmationStepProps) {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [time, setTime] = useState<string>("");
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Función para verificar si un horario está en periodo de descanso
+  const isInBreakTime = (date: Date, shopSchedules: ShopSchedule[], shopBreaks: ShopBreak[]) => {
+    const dayBreaks = shopBreaks.filter(b => b.dayOfWeek === date.getDay());
+    
+    return dayBreaks.some(breakTime => {
+      const [breakStartHour, breakStartMinute] = breakTime.startTime.split(":").map(Number);
+      const [breakEndHour, breakEndMinute] = breakTime.endTime.split(":").map(Number);
+      
+      const breakStart = setHours(setMinutes(date, breakStartMinute), breakStartHour);
+      const breakEnd = setHours(setMinutes(date, breakEndMinute), breakEndHour);
+      
+      return !isBefore(date, breakStart) && !isAfter(date, breakEnd);
+    });
+  };
+
+  // Función para generar slots disponibles para el día seleccionado
+  const generateAvailableSlots = (selectedDate: Date) => {
+    const daySchedule = bookingData.location.schedules.find(
+      s => s.dayOfWeek === selectedDate.getDay() && s.isEnabled
+    );
+
+    if (!daySchedule) return [];
+
+    const slots: string[] = [];
+    const [startHour, startMinute] = daySchedule.startTime.split(":").map(Number);
+    const [endHour, endMinute] = daySchedule.endTime.split(":").map(Number);
+    
+    let currentSlot = setHours(setMinutes(selectedDate, startMinute), startHour);
+    const endTime = setHours(setMinutes(selectedDate, endMinute), endHour);
+
+    while (isBefore(currentSlot, endTime)) {
+      if (!isInBreakTime(currentSlot, bookingData.location.schedules, bookingData.location.breaks)) {
+        slots.push(format(currentSlot, "HH:mm"));
+      }
+      currentSlot = addMinutes(currentSlot, 30); // Intervalos de 30 minutos
+    }
+
+    return slots;
+  };
+
+  // Efecto para actualizar slots disponibles cuando cambia la fecha
+  useEffect(() => {
+    if (date) {
+      const slots = generateAvailableSlots(date);
+      setAvailableSlots(slots);
+      setTime(""); // Reset time when date changes
+    }
+  }, [date]);
+
+  // Función para deshabilitar fechas en el calendario
+  const disabledDates = (date: Date) => {
+    const daySchedule = bookingData.location.schedules.find(
+      s => s.dayOfWeek === date.getDay()
+    );
+    
+    console.log('Checking date:', date);
+    console.log('Day of week:', date.getDay());
+    console.log('Available schedules:', bookingData.location.schedules);
+    console.log('Found schedule:', daySchedule);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const isDisabled = isBefore(date, today) || !daySchedule || !daySchedule.isEnabled;
+    console.log('Is disabled:', isDisabled);
+    
+    return isDisabled;
+  };
 
   const handleConfirm = async () => {
     if (!date || !time) {
@@ -152,11 +226,7 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
               onSelect={setDate}
               className="rounded-md border w-full"
               locale={es}
-              disabled={(date) => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return date < today;
-              }}
+              disabled={disabledDates}
             />
           </div>
         </Card>
@@ -169,7 +239,7 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
               <h3 className="font-medium">Selecciona Hora</h3>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {timeSlots.map((slot) => (
+              {availableSlots.map((slot) => (
                 <Button
                   key={slot}
                   variant={time === slot ? "default" : "outline"}
@@ -179,6 +249,11 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
                   {slot}
                 </Button>
               ))}
+              {availableSlots.length === 0 && date && (
+                <p className="text-muted-foreground col-span-3 text-center py-4">
+                  No hay horarios disponibles para este día
+                </p>
+              )}
             </div>
           </div>
         </Card>

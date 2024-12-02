@@ -35,6 +35,12 @@ export default async function ShopPage({
               Gestionar Trabajadores
             </Button>
           </Link>
+          <Link href={`/admin/shops/${shop.id}/schedule`}>
+            <Button variant="outline">
+              <Clock className="w-4 h-4 mr-2" />
+              Gestionar Horarios
+            </Button>
+          </Link>
           <Link href={`/admin/shops/${shop.id}/edit`}>
             <Button>Editar Tienda</Button>
           </Link>

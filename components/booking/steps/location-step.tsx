@@ -6,18 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MapPin, Phone, Clock, ExternalLink, Scissors, Check } from "lucide-react";
 import { motion } from "framer-motion";
-import { Shop, Worker, Service } from "@prisma/client";
+import { Shop, Worker, Service, ShopSchedule, ShopBreak } from "@prisma/client";
+import { BookingData } from "../booking-form";
 
 type ShopWithRelations = Shop & {
   workers: (Worker & {
     services: Service[]
   })[];
+  schedules: ShopSchedule[];
+  breaks: ShopBreak[];
 };
 
 interface LocationStepProps {
   locations: ShopWithRelations[];
   onNext: () => void;
-  updateBookingData: (data: { location: ShopWithRelations }) => void;
+  updateBookingData: (data: Partial<BookingData>) => void;
 }
 
 export default function LocationStep({ locations, onNext, updateBookingData }: LocationStepProps) {

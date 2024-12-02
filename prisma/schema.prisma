@@ -98,6 +98,29 @@ model Shop {
   updatedAt   DateTime @updatedAt
   userId     String
   workers     Worker[]
+    schedules ShopSchedule[]
+  breaks    ShopBreak[]
+}
+
+
+model ShopSchedule {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  dayOfWeek Int      // 0-6 (Domingo-Sábado)
+  startTime String   // formato "HH:mm"
+  endTime   String   // formato "HH:mm"
+  isEnabled Boolean  @default(true)
+}
+
+model ShopBreak {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  dayOfWeek Int      // 0-6 (Domingo-Sábado)
+  startTime String   // formato "HH:mm"
+  endTime   String   // formato "HH:mm"
+  name      String   // ej: "Almuerzo", "Descanso"
 }
 
 enum WorkerStatus {

@@ -8,7 +8,7 @@ import LocationStep from "./steps/location-step";
 import ServicesStep from "./steps/services-step";
 import UserStep from "./steps/user-step";
 import ConfirmationStep from "./steps/confirmation-step";
-import { Shop, Worker, Service } from "@prisma/client";
+import { Shop, Worker, Service, ShopSchedule, ShopBreak } from "@prisma/client";
 
 const steps = [
   { id: 1, name: "Local" },
@@ -21,18 +21,16 @@ type ShopWithRelations = Shop & {
   workers: (Worker & {
     services: Service[]
   })[];
+  schedules: ShopSchedule[];
+  breaks: ShopBreak[];
 };
 
 interface BookingFormProps {
   initialData: ShopWithRelations[];
 }
 
-type BookingData = {
-  location: Shop & {
-    workers: (Worker & {
-      services: Service[]
-    })[];
-  };
+export type BookingData = {
+  location: ShopWithRelations;
   service: Service;
   staff: Worker;
   user: {

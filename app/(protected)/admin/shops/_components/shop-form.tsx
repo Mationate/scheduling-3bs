@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { toast } from "react-hot-toast";
 
 const formSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -51,6 +53,11 @@ export function ShopForm({ initialData }: ShopFormProps) {
 
   const onSubmit = async (data: ShopFormValues) => {
     try {
+      if (!data.image) {
+        toast.error("Por favor, sube una imagen primero");
+        return;
+      }
+
       setLoading(true);
       const url = initialData 
         ? `/api/shops/${initialData.id}`
@@ -66,10 +73,12 @@ export function ShopForm({ initialData }: ShopFormProps) {
 
       if (!response.ok) throw new Error("Error al guardar la tienda");
 
+      toast.success(initialData ? "Tienda actualizada" : "Tienda creada");
       router.push("/admin/shops");
       router.refresh();
     } catch (error) {
       console.error(error);
+      toast.error("Algo salió mal");
     } finally {
       setLoading(false);
     }
@@ -152,6 +161,24 @@ export function ShopForm({ initialData }: ShopFormProps) {
                         disabled={loading} 
                         placeholder="Ej: Lun-Vie: 9AM-6PM" 
                         {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Imagen</FormLabel>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        disabled={loading}
                       />
                     </FormControl>
                     <FormMessage />

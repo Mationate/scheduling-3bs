@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { toast } from "react-hot-toast";
 
 const formSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -36,7 +38,7 @@ const formSchema = z.object({
 type WorkerFormValues = z.infer<typeof formSchema>;
 
 interface WorkerFormProps {
-  initialData?: WorkerFormValues;
+  initialData?: WorkerFormValues & { id: string };
   shops?: { id: string; name: string; }[];
 }
 
@@ -58,21 +60,32 @@ export function WorkerForm({ initialData, shops = [] }: WorkerFormProps) {
 
   const onSubmit = async (data: WorkerFormValues) => {
     try {
+      if (!data.avatar) {
+        toast.error("Por favor, sube una foto de perfil");
+        return;
+      }
+
       setLoading(true);
-      const response = await fetch("/api/workers", {
-        method: "POST",
+      const url = initialData 
+        ? `/api/workers/${initialData.id}`
+        : "/api/workers";
+      
+      const response = await fetch(url, {
+        method: initialData ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) throw new Error("Error al crear trabajador");
+      if (!response.ok) throw new Error("Error al guardar el trabajador");
 
+      toast.success(initialData ? "Trabajador actualizado" : "Trabajador creado");
       router.push("/admin/workers");
       router.refresh();
     } catch (error) {
       console.error(error);
+      toast.error("Algo salió mal");
     } finally {
       setLoading(false);
     }
@@ -183,6 +196,24 @@ export function WorkerForm({ initialData, shops = [] }: WorkerFormProps) {
                   )}
                 />
               )}
+
+              <FormField
+                control={form.control}
+                name="avatar"
+                render={({ field }) => (
+                  <FormItem className="col-span-full">
+                    <FormLabel>Foto de Perfil</FormLabel>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        disabled={loading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="flex justify-end space-x-4">

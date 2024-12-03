@@ -18,19 +18,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { currentUser } from "@/lib/auth";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { toast } from "react-hot-toast";
 
 const formSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
   description: z.string().optional(),
-  image: z.string().optional(),
   price: z.coerce.number().min(0, "El precio debe ser mayor a 0"),
   duration: z.coerce.number().min(1, "La duración debe ser mayor a 0"),
+  image: z.string().optional(),
 });
 
 type ServiceFormValues = z.infer<typeof formSchema>;
 
 interface ServiceFormProps {
-  initialData?: ServiceFormValues;
+  initialData?: ServiceFormValues & { id: string };
 }
 
 export function ServiceForm({ initialData }: ServiceFormProps) {
@@ -42,7 +44,6 @@ export function ServiceForm({ initialData }: ServiceFormProps) {
     defaultValues: initialData || {
       name: "",
       description: "",
-      image: "",
       price: 0,
       duration: 30,
     },
@@ -50,21 +51,32 @@ export function ServiceForm({ initialData }: ServiceFormProps) {
 
   const onSubmit = async (data: ServiceFormValues) => {
     try {
+      if (!data.image) {
+        toast.error("Por favor, sube una imagen del servicio");
+        return;
+      }
+
       setLoading(true);
-      const response = await fetch("/api/services", {
-        method: "POST",
+      const url = initialData 
+        ? `/api/services/${initialData.id}`
+        : "/api/services";
+      
+      const response = await fetch(url, {
+        method: initialData ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) throw new Error("Error al crear servicio");
+      if (!response.ok) throw new Error("Error al guardar el servicio");
 
+      toast.success(initialData ? "Servicio actualizado" : "Servicio creado");
       router.push("/admin/services");
       router.refresh();
     } catch (error) {
       console.error(error);
+      toast.error("Algo salió mal");
     } finally {
       setLoading(false);
     }
@@ -143,6 +155,24 @@ export function ServiceForm({ initialData }: ServiceFormProps) {
                         disabled={loading}
                         placeholder="30"
                         {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem className="col-span-full">
+                    <FormLabel>Imagen del Servicio</FormLabel>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        disabled={loading}
                       />
                     </FormControl>
                     <FormMessage />

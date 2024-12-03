@@ -154,7 +154,8 @@ model Service {
   bookings    Booking[]
   price       Float
   duration    Int
-  // Nueva relación
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   workers     Worker[] @relation("WorkerToService")
 }
 

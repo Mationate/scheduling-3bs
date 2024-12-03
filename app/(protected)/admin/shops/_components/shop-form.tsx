@@ -172,13 +172,15 @@ export function ShopForm({ initialData }: ShopFormProps) {
                 control={form.control}
                 name="image"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Imagen</FormLabel>
+                  <FormItem className="col-span-full">
                     <FormControl>
                       <ImageUpload
                         value={field.value || ""}
                         onChange={field.onChange}
                         disabled={loading}
+                        onUpload={(url) => {
+                          toast.success("Imagen subida correctamente");
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

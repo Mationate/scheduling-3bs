@@ -21,6 +21,12 @@ import { FormSuccess } from "../form-success"
 import { login } from "@/actions/login"
 import Link from "next/link"
 
+type LoginResponse = {
+  error?: string;
+  success?: string;
+  twoFactor?: boolean;
+};
+
 export const LoginForm = () => {
     const searchParams = useSearchParams();
     const urlError = searchParams.get("error") === "OAuthAccountNotLinked"
@@ -44,7 +50,7 @@ export const LoginForm = () => {
         setSuccess("");
         startTransition(() => {
             login(values)
-            .then((data) => {
+            .then((data: LoginResponse | undefined) => {
                 if(data?.error){
                     form.reset();
                     setError(data.error);

@@ -58,8 +58,12 @@ export function WorkerForm({ initialData, shops = [] }: WorkerFormProps) {
     },
   });
 
+  console.log("Current form values:", form.getValues());
+
   const onSubmit = async (data: WorkerFormValues) => {
     try {
+      console.log("Submitting form with data:", data);
+
       if (!data.avatar) {
         toast.error("Por favor, sube una foto de perfil");
         return;
@@ -70,6 +74,9 @@ export function WorkerForm({ initialData, shops = [] }: WorkerFormProps) {
         ? `/api/workers/${initialData.id}`
         : "/api/workers";
       
+      console.log("Sending request to:", url);
+      console.log("Request payload:", data);
+
       const response = await fetch(url, {
         method: initialData ? "PATCH" : "POST",
         headers: {
@@ -78,13 +85,16 @@ export function WorkerForm({ initialData, shops = [] }: WorkerFormProps) {
         body: JSON.stringify(data),
       });
 
+      const responseData = await response.json();
+      console.log("Server response:", responseData);
+
       if (!response.ok) throw new Error("Error al guardar el trabajador");
 
       toast.success(initialData ? "Trabajador actualizado" : "Trabajador creado");
       router.push("/admin/workers");
       router.refresh();
     } catch (error) {
-      console.error(error);
+      console.error("Form submission error:", error);
       toast.error("Algo salió mal");
     } finally {
       setLoading(false);

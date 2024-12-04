@@ -36,9 +36,8 @@ export async function GET(
 ) {
   try {
     const workers = await db.worker.findMany({
-      include: {
-        shop: true,
-        services: true,
+      where: {
+        status: "ACTIVE"
       },
       orderBy: {
         createdAt: 'desc',

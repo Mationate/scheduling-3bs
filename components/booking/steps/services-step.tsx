@@ -21,7 +21,7 @@ interface ServicesStepProps {
   updateBookingData: (data: { service: Service; staff: Worker }) => void;
 }
 
-export default function ServicesStep({
+export function ServicesStep({
   location,
   onNext,
   onBack,

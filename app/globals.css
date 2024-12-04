@@ -1,7 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
+@import "~@uploadthing/react/styles.css";
+
 html,
 body,
 :root {
@@ -77,5 +79,25 @@ body,
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .calendar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary)) transparent;
+  }
+
+  .calendar-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .calendar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .calendar-scroll::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--primary));
+    border-radius: 3px;
   }
 }

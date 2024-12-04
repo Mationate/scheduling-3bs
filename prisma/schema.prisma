@@ -100,6 +100,7 @@ model Shop {
   workers     Worker[]
     schedules ShopSchedule[]
   breaks    ShopBreak[]
+  bookings  Booking[]
 }
 
 
@@ -143,6 +144,7 @@ model Worker {
   shopId      String?
   // Nueva relación
   services    Service[] @relation("WorkerToService")
+  bookings    Booking[]
 }
 
 model Service {
@@ -160,13 +162,25 @@ model Service {
 }
 
 model Booking {
-  id         String    @id @default(cuid())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id])
-  serviceId  String
-  service    Service   @relation(fields: [serviceId], references: [id])
-  date       DateTime
-  status     String    @default("pending")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  date      DateTime
+  startTime String
+  endTime   String
+  status    String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
+  userId    String
+  workerId  String
+  serviceId String
+  shopId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  worker  Worker  @relation(fields: [workerId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+  shop    Shop    @relation(fields: [shopId], references: [id])
+
+  @@index([userId])
+  @@index([workerId])
+  @@index([serviceId])
+  @@index([shopId])
 }

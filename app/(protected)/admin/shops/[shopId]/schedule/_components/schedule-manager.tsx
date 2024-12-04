@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ShopSchedule, ShopBreak } from "@prisma/client";
 import { Trash } from "lucide-react";
+import { format, parse } from "date-fns";
 
 const DAYS = [
   "Domingo",
@@ -135,6 +136,28 @@ export function ScheduleManager({
       toast.error("Error al eliminar descanso");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTimeChange = (dayOfWeek: number, field: "startTime" | "endTime", value: string) => {
+    try {
+      const time = parse(value, "HH:mm", new Date());
+      const formattedTime = format(time, "HH:mm");
+
+      const updatedSchedules = tempSchedules.map((item) => {
+        if (item.dayOfWeek === dayOfWeek) {
+          return {
+            ...item,
+            [field]: formattedTime,
+          };
+        }
+        return item;
+      });
+
+      setTempSchedules(updatedSchedules);
+      setHasChanges(true);
+    } catch (error) {
+      console.error("Error parsing time:", error);
     }
   };
 

@@ -20,6 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { currentUser } from "@/lib/auth";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { toast } from "react-hot-toast";
+import { ImageForm } from "@/components/image-form";
 
 const formSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -46,16 +47,12 @@ export function ServiceForm({ initialData }: ServiceFormProps) {
       description: "",
       price: 0,
       duration: 30,
+      image: "",
     },
   });
 
   const onSubmit = async (data: ServiceFormValues) => {
     try {
-      if (!data.image) {
-        toast.error("Por favor, sube una imagen del servicio");
-        return;
-      }
-
       setLoading(true);
       const url = initialData 
         ? `/api/services/${initialData.id}`
@@ -171,7 +168,35 @@ export function ServiceForm({ initialData }: ServiceFormProps) {
                     <FormControl>
                       <ImageUpload
                         value={field.value || ""}
-                        onChange={field.onChange}
+                        onChange={async (url) => {
+                          if (url) {
+                            try {
+                              if (initialData?.id) {
+                                const response = await fetch(`/api/services/${initialData.id}/image`, {
+                                  method: "PATCH",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({ imageUrl: url }),
+                                });
+
+                                if (!response.ok) {
+                                  throw new Error("Error al actualizar la imagen");
+                                }
+
+                                const data = await response.json();
+                                console.log("Image update response:", data);
+                              }
+
+                              field.onChange(url);
+                              toast.success("Imagen actualizada correctamente");
+                              router.refresh();
+                            } catch (error) {
+                              console.error("Error updating image:", error);
+                              toast.error("Error al actualizar la imagen");
+                            }
+                          }
+                        }}
                         disabled={loading}
                       />
                     </FormControl>
@@ -196,6 +221,11 @@ export function ServiceForm({ initialData }: ServiceFormProps) {
             </div>
           </form>
         </Form>
+        <ImageForm
+          initialData={{ imageUrl: form.getValues("image") }}
+          entityId={initialData?.id || ""}
+          entityType="services"
+        />
       </CardContent>
     </Card>
   );

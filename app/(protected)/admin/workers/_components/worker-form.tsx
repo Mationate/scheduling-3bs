@@ -25,6 +25,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { toast } from "react-hot-toast";
+import { ImageForm } from "@/components/image-form";
 
 const formSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -63,11 +64,6 @@ export function WorkerForm({ initialData, shops = [] }: WorkerFormProps) {
   const onSubmit = async (data: WorkerFormValues) => {
     try {
       console.log("Submitting form with data:", data);
-
-      if (!data.avatar) {
-        toast.error("Por favor, sube una foto de perfil");
-        return;
-      }
 
       setLoading(true);
       const url = initialData 
@@ -214,16 +210,17 @@ export function WorkerForm({ initialData, shops = [] }: WorkerFormProps) {
                   <FormItem className="col-span-full">
                     <FormLabel>Foto de Perfil</FormLabel>
                     <FormControl>
-                      <ImageUpload
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        disabled={loading}
-                      />
+                        <ImageForm
+                            initialData={{ imageUrl: form.getValues("avatar") }}
+                            entityId={initialData?.id || ""}
+                            entityType="workers"
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
             </div>
 
             <div className="flex justify-end space-x-4">

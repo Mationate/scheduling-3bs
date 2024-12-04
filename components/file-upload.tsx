@@ -16,12 +16,27 @@ export const FileUpload = ({
     return(
         <UploadDropzone
             endpoint={endpoint}
-            onClientUploadComplete={(res) =>{
-                onChange(res?.[0].url, res?.[0].name)
+            onBeforeUploadBegin={(files) => {
+                console.log("Before upload:", files);
+                return files;
+            }}
+            onUploadBegin={() => {
+                console.log("Upload started");
+            }}
+            onUploadProgress={(progress) => {
+                console.log("Upload progress:", progress);
+            }}
+            onClientUploadComplete={(res) => {
+                console.log("Upload completed:", res);
+                if (res?.[0]) {
+                    onChange(res[0].url, res[0].name);
+                    toast.success("Imagen subida correctamente");
+                }
             }}
             onUploadError={(error: Error) => {
-                toast.error(`${error.message}`)
+                console.error("Upload error:", error);
+                toast.error(`Error al subir la imagen: ${error.message}`);
             }}
         />
-    )
-}
+    );
+};

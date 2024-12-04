@@ -1,20 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import LocationStep from "./steps/location-step";
-import ServicesStep from "./steps/services-step";
-import UserStep from "./steps/user-step";
-import ConfirmationStep from "./steps/confirmation-step";
+import { ServicesStep } from "./steps/services-step";
+
+import { UserStep } from "./steps/user-step";
 import { Shop, Worker, Service, ShopSchedule, ShopBreak } from "@prisma/client";
+import ConfirmationStep from "./steps/confirmation-step";
+import { ScheduleStep } from "./steps/schedule-step";
 
 const steps = [
   { id: 1, name: "Local" },
   { id: 2, name: "Servicios" },
   { id: 3, name: "Tus Datos" },
-  { id: 4, name: "Confirmación" },
+  { id: 4, name: "Fecha y Hora" },
+  { id: 5, name: "Confirmación" },
 ];
 
 type ShopWithRelations = Shop & {
@@ -39,8 +42,8 @@ export type BookingData = {
     email?: string;
     notes?: string;
   };
-  date: Date | null;
-  time: string | null;
+  date: Date;
+  time: string;
 };
 
 export default function BookingForm({ initialData }: BookingFormProps) {
@@ -53,6 +56,10 @@ export default function BookingForm({ initialData }: BookingFormProps) {
     date: undefined,
     time: undefined,
   });
+
+  useEffect(() => {
+    console.log(bookingData);
+  }, [bookingData]);
 
   const progress = (currentStep / steps.length) * 100;
 
@@ -121,18 +128,20 @@ export default function BookingForm({ initialData }: BookingFormProps) {
               updateBookingData={updateBookingData}
             />
           )}
-          {currentStep === 4 && bookingData.location && bookingData.service && 
-           bookingData.staff && bookingData.user && (
+          {currentStep === 4 && bookingData.location && bookingData.staff && (
+            <ScheduleStep
+              onNext={handleNext}
+              onBack={handleBack}
+              updateBookingData={updateBookingData}
+              location={bookingData.location}
+              staff={bookingData.staff}
+            />
+          )}
+          {currentStep === 5 && bookingData.location && bookingData.service && 
+           bookingData.staff && bookingData.user && bookingData.date && bookingData.time && (
             <ConfirmationStep
               onBack={handleBack}
-              bookingData={{
-                location: bookingData.location,
-                service: bookingData.service,
-                staff: bookingData.staff,
-                user: bookingData.user,
-                date: bookingData.date ?? null,
-                time: bookingData.time ?? null,
-              }}
+              bookingData={bookingData as BookingData}
             />
           )}
         </motion.div>

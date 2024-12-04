@@ -103,9 +103,7 @@ export function ServicesDataTable({ initialData }: ServicesDataTableProps) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <Button onClick={() => router.push("/admin/services/new")}>
-          <Plus className="mr-2 h-4 w-4" /> Add Service
-        </Button>
+       
       </div>
       <DataTable
         data={filteredData}

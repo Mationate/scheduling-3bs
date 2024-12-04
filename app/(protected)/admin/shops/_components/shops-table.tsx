@@ -10,9 +10,23 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { 
+  MoreHorizontal, 
+  Calendar, 
+  Users, 
+  Pencil, 
+  Trash2,
+  Mail,
+  Phone,
+  MapPin,
+  Clock
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface ShopData {
   id: string;
@@ -40,48 +54,110 @@ export function ShopsDataTable({ initialData }: ShopsDataTableProps) {
   );
 
   const columns = [
-    { header: "Name", accessorKey: "name" },
-    { header: "Phone", accessorKey: "phone" },
-    { header: "Email", accessorKey: "mail" },
-    { header: "Address", accessorKey: "address" },
-    { header: "Workers", accessorKey: "workersCount" },
-    { header: "Created", accessorKey: "createdAt" },
+    { 
+      header: "Tienda",
+      accessorKey: "name",
+      cell: (row: ShopData) => (
+        <div className="flex items-center space-x-2">
+          <span className="font-medium">{row.name}</span>
+          <Badge variant="outline">{row.workersCount} trabajadores</Badge>
+        </div>
+      )
+    },
+    { 
+      header: "Contacto",
+      id: "contact",
+      cell: (row: ShopData) => (
+        <div className="space-y-1">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Mail className="h-4 w-4 mr-2" />
+            {row.mail}
+          </div>
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Phone className="h-4 w-4 mr-2" />
+            {row.phone}
+          </div>
+        </div>
+      )
+    },
+    { 
+      header: "Ubicación",
+      accessorKey: "address",
+      cell: (row: ShopData) => (
+        <div className="flex items-center text-sm">
+          <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+          {row.address}
+        </div>
+      )
+    },
+    { 
+      header: "Creado",
+      accessorKey: "createdAt",
+      cell: (row: ShopData) => (
+        <div className="flex items-center text-sm text-muted-foreground">
+          <Clock className="h-4 w-4 mr-2" />
+          {format(new Date(row.createdAt), "PP", { locale: es })}
+        </div>
+      )
+    },
     {
-      header: "Actions",
+      header: "Acciones",
       id: "actions",
       cell: (row: ShopData) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => router.push(`/admin/shops/${row.id}`)}>
-              View details
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push(`/admin/shops/${row.id}/edit`)}>
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={async () => {
-                if (confirm("Are you sure you want to delete this shop?")) {
-                  const res = await fetch(`/api/shops/${row.id}`, {
-                    method: "DELETE"
-                  });
-                  if (res.ok) {
-                    setData(prev => prev.filter(shop => shop.id !== row.id));
-                    router.refresh();
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push(`/admin/shops/${row.id}/schedule`)}
+            title="Gestionar Horarios"
+          >
+            <Calendar className="h-4 w-4 text-blue-500" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push(`/admin/shops/${row.id}/workers`)}
+            title="Gestionar Trabajadores"
+          >
+            <Users className="h-4 w-4 text-green-500" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => router.push(`/admin/shops/${row.id}`)}>
+                <Users className="h-4 w-4 mr-2" />
+                Ver detalles
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(`/admin/shops/${row.id}/edit`)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={async () => {
+                  if (confirm("¿Estás seguro de que quieres eliminar esta tienda?")) {
+                    const res = await fetch(`/api/shops/${row.id}`, {
+                      method: "DELETE"
+                    });
+                    if (res.ok) {
+                      setData(prev => prev.filter(shop => shop.id !== row.id));
+                      router.refresh();
+                    }
                   }
-                }
-              }}
-              className="text-red-600"
-            >
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                }}
+                className="text-red-600"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       )
     }
   ] satisfies Column<ShopData>[];
@@ -90,14 +166,11 @@ export function ShopsDataTable({ initialData }: ShopsDataTableProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Input
-          placeholder="Search shops..."
+          placeholder="Buscar tiendas..."
           className="max-w-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <Button onClick={() => router.push("/admin/shops/new")}>
-          <Plus className="mr-2 h-4 w-4" /> Add Shop
-        </Button>
       </div>
       <DataTable
         data={filteredData}

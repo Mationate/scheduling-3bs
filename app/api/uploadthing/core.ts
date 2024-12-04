@@ -1,26 +1,32 @@
-import { currentUser } from "@/lib/auth";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { currentUser } from "@/lib/auth";
  
 const f = createUploadthing();
 
-const handleAuth = async () => {
-    const user = await currentUser()
-    if (!user) throw new Error("Unauthorized")
-    // const { id: userId } = currentUser
-    return user;
-}
- 
 export const ourFileRouter = {
-  imageUploader: f({ image: { maxFileSize: "8MB", maxFileCount: 1 } })
+  imageUploader: f({
+    image: {
+      maxFileSize: "8MB",
+      maxFileCount: 1
+    }
+  })
     .middleware(async () => {
       const user = await currentUser();
-      console.log("Upload request from user:", user); // Debug
+      console.log("Upload middleware - user:", user);
+
       if (!user) throw new Error("Unauthorized");
       return { userId: user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Upload completed:", { metadata, file }); // Debug
-      return { uploadedBy: metadata.userId, url: file.url };
+      console.log("Upload completed - metadata:", metadata);
+      console.log("Upload completed - file:", file);
+      
+      return {
+        uploadedBy: metadata.userId,
+        url: file.url,
+        name: file.name,
+        size: file.size,
+      };
     }),
 } satisfies FileRouter;
  

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Users, Scissors, Calendar, User, LogOut } from "lucide-react";
+import { Building2, Users, Scissors, Calendar, User, LogOut, Menu } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,36 +11,32 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const routes = [
   {
-    label: "Management",
-    items: [
-      {
-        label: "Shops",
-        icon: Building2,
-        href: "/admin/shops",
-        color: "text-sky-500",
-      },
-      {
-        label: "Workers",
-        icon: Users,
-        href: "/admin/workers",
-        color: "text-violet-500",
-      },
-      {
-        label: "Services",
-        icon: Scissors,
-        href: "/admin/services",
-        color: "text-pink-700",
-      },
-      {
-        label: "Bookings",
-        icon: Calendar,
-        href: "/admin/bookings",
-        color: "text-orange-700",
-      },
-    ],
+    label: "Locales",
+    icon: Building2,
+    href: "/admin/shops",
+    color: "text-sky-500",
+  },
+  {
+    label: "Colaboradores",
+    icon: Users,
+    href: "/admin/workers",
+    color: "text-violet-500",
+  },
+  {
+    label: "Servicios",
+    icon: Scissors,
+    href: "/admin/services",
+    color: "text-pink-700",
+  },
+  {
+    label: "Calendario",
+    icon: Calendar,
+    href: "/admin/bookings",
+    color: "text-orange-700",
   },
 ];
 
@@ -48,59 +44,83 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="border-b bg-white">
-      <div className="flex h-16 items-center px-4">
-        <Link href="/admin" className="font-bold text-xl">
-          Admin Panel
-        </Link>
+    <nav className="border-b bg-white shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
+          <div className="flex items-center">
+            <Link href="/admin" className="font-bold text-xl text-gray-900">
+              Panel agenda
+            </Link>
+          </div>
 
-        <div className="ml-8 flex items-center space-x-4">
-          {routes.map((route) => (
-            <DropdownMenu key={route.label}>
+          <div className="hidden md:flex items-center space-x-4">
+            {routes.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === item.href
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <item.icon className={`h-5 w-5 ${item.color}`} />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="font-semibold">
-                  {route.label}
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>AD</AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                {route.items.map((item) => (
-                  <DropdownMenuItem key={item.href} asChild>
-                    <Link
-                      href={item.href}
-                      className="flex items-center space-x-2 cursor-pointer"
-                    >
-                      <item.icon className={`h-4 w-4 ${item.color}`} />
-                      <span>{item.label}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ))}
-        </div>
 
-        <div className="ml-auto flex items-center space-x-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>AD</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer text-red-600">
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <nav className="flex flex-col space-y-4 mt-4">
+                  {routes.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        pathname === item.href
+                          ? "bg-gray-100 text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
+                    >
+                      <item.icon className={`h-5 w-5 ${item.color}`} />
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </nav>
   );
 }
+

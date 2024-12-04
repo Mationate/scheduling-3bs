@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { toast } from "react-hot-toast";
+import { ImageForm } from "@/components/image-form";
 
 const formSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -53,11 +54,6 @@ export function ShopForm({ initialData }: ShopFormProps) {
 
   const onSubmit = async (data: ShopFormValues) => {
     try {
-      if (!data.image) {
-        toast.error("Por favor, sube una imagen primero");
-        return;
-      }
-
       setLoading(true);
       const url = initialData 
         ? `/api/shops/${initialData.id}`
@@ -81,6 +77,32 @@ export function ShopForm({ initialData }: ShopFormProps) {
       toast.error("Algo salió mal");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageUpdate = async (imageUrl: string) => {
+    try {
+      if (!initialData?.id) {
+        form.setValue("image", imageUrl);
+        return;
+      }
+
+      const response = await fetch(`/api/shops/${initialData.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ image: imageUrl }),
+      });
+
+      if (!response.ok) throw new Error("Error al actualizar la imagen");
+      
+      form.setValue("image", imageUrl);
+      toast.success("Imagen actualizada correctamente");
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al actualizar la imagen");
     }
   };
 
@@ -173,14 +195,40 @@ export function ShopForm({ initialData }: ShopFormProps) {
                 name="image"
                 render={({ field }) => (
                   <FormItem className="col-span-full">
+                    <FormLabel>Imagen de la Tienda</FormLabel>
                     <FormControl>
                       <ImageUpload
                         value={field.value || ""}
-                        onChange={field.onChange}
-                        disabled={loading}
-                        onUpload={(url) => {
-                          toast.success("Imagen subida correctamente");
+                        onChange={async (url) => {
+                          if (url) {
+                            try {
+                              if (initialData?.id) {
+                                const response = await fetch(`/api/shops/${initialData.id}/image`, {
+                                  method: "PATCH",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({ imageUrl: url }),
+                                });
+
+                                if (!response.ok) {
+                                  throw new Error("Error al actualizar la imagen");
+                                }
+
+                                const data = await response.json();
+                                console.log("Image update response:", data);
+                              }
+
+                              field.onChange(url);
+                              toast.success("Imagen actualizada correctamente");
+                              router.refresh();
+                            } catch (error) {
+                              console.error("Error updating image:", error);
+                              toast.error("Error al actualizar la imagen");
+                            }
+                          }
                         }}
+                        disabled={loading}
                       />
                     </FormControl>
                     <FormMessage />

@@ -10,7 +10,7 @@ import * as numberingSystems from '@syncfusion/ej2-cldr-data/supplemental/number
 import * as gregorian from '@syncfusion/ej2-cldr-data/main/es/ca-gregorian.json';
 import * as numbers from '@syncfusion/ej2-cldr-data/main/es/numbers.json';
 import * as timeZoneNames from '@syncfusion/ej2-cldr-data/main/es/timeZoneNames.json';
-import { format, addDays, subDays } from 'date-fns';
+import { format, addDays, subDays, startOfDay, endOfDay, parseISO } from 'date-fns';
 import { CalendarHeader } from './_components/calendar-header';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -106,10 +106,17 @@ export default function CalendarPage() {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-        console.log('Fetching bookings for date:', formattedDate);
+        const start = startOfDay(selectedDate);
+        const end = endOfDay(selectedDate);
         
-        const response = await fetch(`/api/bookings?date=${formattedDate}`);
+        console.log('Fetching bookings between:', {
+          start: start.toISOString(),
+          end: end.toISOString()
+        });
+        
+        const response = await fetch(
+          `/api/bookings?start=${start.toISOString()}&end=${end.toISOString()}`
+        );
         const data = await response.json();
         
         console.log('Received bookings:', data);
@@ -125,27 +132,32 @@ export default function CalendarPage() {
 
   // Transform bookings for scheduler
   const transformedBookings = bookings.map(booking => {
-    const startTime = new Date(`${booking.date}T${booking.startTime}`);
-    const endTime = new Date(`${booking.date}T${booking.endTime}`);
+    // Convertir la fecha UTC a local
+    const bookingDate = parseISO(booking.date);
     
-    console.log('Transforming booking:', {
-      original: booking,
-      transformed: {
-        startTime,
-        endTime,
-        resourceId: viewType === "services" ? booking.service.id : booking.worker.id
-      }
-    });
-
-    return {
+    // Crear fechas completas combinando fecha y hora
+    const [startHour, startMinute] = booking.startTime.split(':');
+    const [endHour, endMinute] = booking.endTime.split(':');
+    
+    const startTime = new Date(bookingDate);
+    startTime.setHours(parseInt(startHour), parseInt(startMinute), 0);
+    
+    const endTime = new Date(bookingDate);
+    endTime.setHours(parseInt(endHour), parseInt(endMinute), 0);
+    
+    const transformedBooking = {
       Id: booking.id,
       Subject: viewType === "services" ? booking.user.name : booking.service.name,
       StartTime: startTime,
       EndTime: endTime,
       IsAllDay: false,
       ResourceId: viewType === "services" ? booking.service.id : booking.worker.id,
-      Status: booking.status
+      Status: booking.status,
+      Description: `Servicio: ${booking.service.name}\nBarbero: ${booking.worker.name}`
     };
+
+    console.log('Transformed booking:', transformedBooking);
+    return transformedBooking;
   });
 
   const eventSettings: EventSettingsModel = { 
@@ -155,7 +167,8 @@ export default function CalendarPage() {
       subject: { name: 'Subject' },
       startTime: { name: 'StartTime' },
       endTime: { name: 'EndTime' },
-      isAllDay: { name: 'IsAllDay' }
+      isAllDay: { name: 'IsAllDay' },
+      description: { name: 'Description' }
     }
   };
 

@@ -69,34 +69,30 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const dateStr = searchParams.get("date");
+    const start = searchParams.get('start');
+    const end = searchParams.get('end');
 
-    if (!dateStr) {
-      return NextResponse.json([]);
+    if (!start || !end) {
+      return new NextResponse("Start and end dates are required", { status: 400 });
     }
-
-    // Normalizar la fecha para la comparación
-    const date = startOfDay(new Date(dateStr));
-    console.log('Searching bookings for date:', date);
 
     const bookings = await db.booking.findMany({
       where: {
         date: {
-          gte: date,
-          lt: addDays(date, 1),
-        },
+          gte: new Date(start),
+          lte: new Date(end)
+        }
       },
       include: {
-        service: true,
-        worker: true,
         user: true,
+        service: true,
+        worker: true
       }
     });
 
-    console.log('Found bookings:', bookings);
     return NextResponse.json(bookings);
   } catch (error) {
     console.error("[BOOKINGS_GET]", error);
-    return NextResponse.json([], { status: 500 });
+    return new NextResponse("Internal error", { status: 500 });
   }
 } 

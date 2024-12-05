@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { startOfDay, addDays } from "date-fns";
 
 export async function POST(req: Request) {
   try {
@@ -68,15 +69,22 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const date = searchParams.get("date");
+    const dateStr = searchParams.get("date");
 
-    if (!date) {
+    if (!dateStr) {
       return NextResponse.json([]);
     }
 
+    // Normalizar la fecha para la comparación
+    const date = startOfDay(new Date(dateStr));
+    console.log('Searching bookings for date:', date);
+
     const bookings = await db.booking.findMany({
       where: {
-        date: new Date(date),
+        date: {
+          gte: date,
+          lt: addDays(date, 1),
+        },
       },
       include: {
         service: true,
@@ -85,6 +93,7 @@ export async function GET(req: Request) {
       }
     });
 
+    console.log('Found bookings:', bookings);
     return NextResponse.json(bookings);
   } catch (error) {
     console.error("[BOOKINGS_GET]", error);

@@ -110,7 +110,7 @@ export function ServicesStep({
             <div className="mb-4">
               <h2 className="text-xl font-semibold text-center">👨‍💼 Selecciona el Profesional</h2>
               <p className="text-sm text-gray-600 mt-1 text-center">
-                Elige un profesional específico o selecciona "Cualquier Profesional Disponible"
+                Elige un profesional específico o selecciona &quot;Cualquier Profesional Disponible&quot;
               </p>
             </div>
 

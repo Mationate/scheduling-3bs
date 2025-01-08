@@ -21,7 +21,7 @@ interface TimelineProps {
   sidebarWidth: number;
 }
 
-export function Timeline({
+export function TimeLine({
   isBaseTimeFormat,
   isSidebar,
   dayWidth,

@@ -3,6 +3,11 @@ import { currentUser } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { startOfDay, addDays } from "date-fns";
 
+interface PrismaError {
+  code?: string;
+  message?: string;
+}
+
 export async function POST(req: Request) {
   try {
     const user = await currentUser();
@@ -11,6 +16,33 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+
+    // Verificar que el worker existe
+    const worker = await db.worker.findUnique({
+      where: { id: body.workerId }
+    });
+
+    if (!worker) {
+      return new NextResponse("Worker not found", { status: 404 });
+    }
+
+    // Verificar que el servicio existe
+    const service = await db.service.findUnique({
+      where: { id: body.serviceId }
+    });
+
+    if (!service) {
+      return new NextResponse("Service not found", { status: 404 });
+    }
+
+    // Verificar que la tienda existe
+    const shop = await db.shop.findUnique({
+      where: { id: body.shopId }
+    });
+
+    if (!shop) {
+      return new NextResponse("Shop not found", { status: 404 });
+    }
 
     // Verificar si ya existe una reserva para ese horario
     const existingBooking = await db.booking.findFirst({
@@ -60,9 +92,13 @@ export async function POST(req: Request) {
     // });
 
     return NextResponse.json(booking);
-  } catch (error) {
-    console.log("[BOOKINGS_POST]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+  } catch (error: unknown) {
+    const prismaError = error as PrismaError;
+    console.error("[BOOKINGS_POST]", error);
+    return new NextResponse(
+      prismaError.message || "Internal Error", 
+      { status: prismaError.code === 'P2003' ? 400 : 500 }
+    );
   }
 }
 

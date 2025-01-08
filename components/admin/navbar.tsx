@@ -35,7 +35,7 @@ const routes = [
   {
     label: "Calendario",
     icon: Calendar,
-    href: "/admin/bookings",
+    href: "/admin/calendar",
     color: "text-orange-700",
   },
 ];

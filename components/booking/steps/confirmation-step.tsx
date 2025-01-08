@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { MapPin, Clock, User, Scissors, Mail, Phone, AlertCircle } from "lucide-react";
+import { MapPin, Clock, User, Scissors, Mail, Phone, AlertCircle } from 'lucide-react';
 import { motion } from "framer-motion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatPrice } from "@/lib/utils";
@@ -40,9 +40,11 @@ type BookingData = {
 interface ConfirmationStepProps {
   onBack: () => void;
   bookingData: BookingData;
+  onConfirm: () => Promise<void>;
+  isLoading: boolean;
 }
 
-export default function ConfirmationStep({ onBack, bookingData }: ConfirmationStepProps) {
+export default function ConfirmationStep({ onBack, bookingData, onConfirm, isLoading }: ConfirmationStepProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -104,6 +106,7 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
 
   return (
     <div className="space-y-6">
+      <h2 className="text-2xl font-semibold mb-4 text-center">✅ Confirma tu Reserva</h2>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -116,8 +119,8 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
                 <MapPin className="h-5 w-5 text-primary mt-1" />
                 <div>
                   <p className="font-medium">Local</p>
-                  <p className="text-sm text-muted-foreground">{bookingData.location.name}</p>
-                  <p className="text-sm text-muted-foreground">{bookingData.location.address}</p>
+                  <p className="text-sm text-gray-600">{bookingData.location.name}</p>
+                  <p className="text-sm text-gray-600">{bookingData.location.address}</p>
                 </div>
               </div>
 
@@ -125,8 +128,8 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
                 <Scissors className="h-5 w-5 text-primary mt-1" />
                 <div>
                   <p className="font-medium">Servicio</p>
-                  <p className="text-sm text-muted-foreground">{bookingData.service.name}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-gray-600">{bookingData.service.name}</p>
+                  <p className="text-sm text-gray-600">
                     {formatPrice(bookingData.service.price)} · {bookingData.service.duration} min
                   </p>
                 </div>
@@ -136,10 +139,10 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
                 <Clock className="h-5 w-5 text-primary mt-1" />
                 <div>
                   <p className="font-medium">Fecha y Hora</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-gray-600">
                     {format(bookingData.date, "PPP", { locale: es })}
                   </p>
-                  <p className="text-sm text-muted-foreground">{bookingData.time} hrs</p>
+                  <p className="text-sm text-gray-600">{bookingData.time} hrs</p>
                 </div>
               </div>
             </div>
@@ -149,7 +152,7 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
                 <User className="h-5 w-5 text-primary mt-1" />
                 <div>
                   <p className="font-medium">Profesional</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-gray-600">
                     {bookingData.staff.id === "any" ? "Cualquier Profesional Disponible" : bookingData.staff.name}
                   </p>
                 </div>
@@ -159,13 +162,13 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
                 <User className="h-5 w-5 text-primary mt-1" />
                 <div>
                   <p className="font-medium">Tus Datos</p>
-                  <p className="text-sm text-muted-foreground">{bookingData.user.name}</p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <p className="text-sm text-gray-600">{bookingData.user.name}</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Phone className="h-3 w-3" />
                     {bookingData.user.phone}
                   </div>
                   {bookingData.user.email && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Mail className="h-3 w-3" />
                       {bookingData.user.email}
                     </div>
@@ -178,7 +181,7 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
                   <AlertCircle className="h-5 w-5 text-primary mt-1" />
                   <div>
                     <p className="font-medium">Notas</p>
-                    <p className="text-sm text-muted-foreground">{bookingData.user.notes}</p>
+                    <p className="text-sm text-gray-600">{bookingData.user.notes}</p>
                   </div>
                 </div>
               )}
@@ -241,3 +244,4 @@ export default function ConfirmationStep({ onBack, bookingData }: ConfirmationSt
     </div>
   );
 }
+

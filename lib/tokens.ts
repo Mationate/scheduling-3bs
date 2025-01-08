@@ -74,3 +74,26 @@ export const generateVerificationToken = async ( email: string) => {
 
     return verificationToken;
 }
+
+export const generateSixDigitToken = async (email: string) => {
+  // Generar un código de 6 dígitos (100000-999999)
+  const token = Math.floor(100000 + Math.random() * 900000).toString();
+  const expires = new Date(new Date().getTime() + 5 * 60 * 1000); // 5 minutos de expiración
+
+  const existingToken = await getTwoFactorTokenByEmail(email);
+  if (existingToken) {
+    await db.twoFactorToken.delete({
+      where: { id: existingToken.id }
+    });
+  }
+
+  const verificationToken = await db.twoFactorToken.create({
+    data: {
+      email,
+      token,
+      expires,
+    }
+  });
+
+  return verificationToken;
+};

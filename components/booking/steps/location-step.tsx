@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin, Phone, Clock, ExternalLink, Scissors, Check } from "lucide-react";
+import { MapPin, Phone, Clock, ExternalLink, Scissors, Check } from 'lucide-react';
 import { motion } from "framer-motion";
 import { Shop, Worker, Service, ShopSchedule, ShopBreak } from "@prisma/client";
 import { BookingData } from "../booking-form";
@@ -33,12 +33,13 @@ export default function LocationStep({ locations, onNext, updateBookingData }: L
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold mb-4">Selecciona tu Local</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <h2 className="text-2xl font-semibold mb-4 text-center">📍 Selecciona tu Local</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {locations.map((location) => (
           <motion.div
             key={location.id}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
             <Card
@@ -49,7 +50,7 @@ export default function LocationStep({ locations, onNext, updateBookingData }: L
               }`}
               onClick={() => handleSelect(location)}
             >
-              <div className="relative h-48 mb-4 rounded-md overflow-hidden">
+              <div className="relative h-40 mb-4 rounded-md overflow-hidden">
                 <Image
                   src={location.image || "/placeholder-shop.jpg"}
                   alt={location.name}
@@ -58,7 +59,7 @@ export default function LocationStep({ locations, onNext, updateBookingData }: L
                 />
               </div>
               <h3 className="text-lg font-semibold mb-2">{location.name}</h3>
-              <div className="space-y-2 text-sm text-muted-foreground">
+              <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-primary" />
                   <span>{location.address}</span>
@@ -87,12 +88,12 @@ export default function LocationStep({ locations, onNext, updateBookingData }: L
           animate={{ opacity: 1, y: 0 }}
           className="mt-6"
         >
-          <Card className="p-4 bg-primary/5">
-            <h3 className="text-lg font-semibold mb-3">Información Detallada</h3>
-            <div className="grid grid-cols-2 gap-4">
+          <Card className="p-4 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-3">✨ Información Detallada</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium mb-2">Servicios Disponibles</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
+                <h4 className="font-medium mb-2">Servicios Disponibles 💇‍♀️</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
                   {Array.from(new Set(selectedLocation.workers.flatMap(worker => 
                     worker.services.map(service => service.name)
                   ))).map((serviceName) => (
@@ -104,8 +105,8 @@ export default function LocationStep({ locations, onNext, updateBookingData }: L
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium mb-2">Información Adicional</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
+                <h4 className="font-medium mb-2">Información Adicional 📌</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
                   <li className="flex items-center gap-2">
                     <Check className="h-3 w-3 text-primary" />
                     {selectedLocation.workers.length} profesionales disponibles

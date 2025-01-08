@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Clock, DollarSign, User } from "lucide-react";
-import { motion } from "framer-motion";
+import { Clock, DollarSign, User } from 'lucide-react';
+import { motion, AnimatePresence } from "framer-motion";
 import { Shop, Worker, Service } from "@prisma/client";
 import { formatPrice } from "@/lib/utils";
 
@@ -30,7 +30,6 @@ export function ServicesStep({
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<Worker | null>(null);
 
-  // Obtener servicios únicos de todos los trabajadores
   const uniqueServices = Array.from(
     new Map(
       location.workers.flatMap(worker => 
@@ -39,7 +38,6 @@ export function ServicesStep({
     ).values()
   );
 
-  // Obtener trabajadores que pueden realizar el servicio seleccionado
   const availableStaff = selectedService
     ? location.workers.filter(worker =>
         worker.services.some(service => service.id === selectedService.id)
@@ -48,7 +46,7 @@ export function ServicesStep({
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
-    setSelectedStaff(null); // Resetear el staff al cambiar de servicio
+    setSelectedStaff(null);
   };
 
   const handleStaffSelect = (staff: Worker) => {
@@ -65,12 +63,13 @@ export function ServicesStep({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold mb-4">Selecciona el Servicio</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h2 className="text-2xl font-semibold mb-4 text-center">✂️ Selecciona el Servicio</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {uniqueServices.map((service) => (
             <motion.div
               key={service.id}
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <Card
@@ -82,7 +81,7 @@ export function ServicesStep({
                 onClick={() => handleServiceSelect(service)}
               >
                 <h3 className="text-lg font-semibold mb-2">{service.name}</h3>
-                <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-primary" />
                     <span>{service.duration} minutos</span>
@@ -101,76 +100,95 @@ export function ServicesStep({
         </div>
       </div>
 
-      {selectedService && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Selecciona el Profesional</h2>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // Seleccionar un trabajador aleatorio que pueda realizar el servicio
-                const randomIndex = Math.floor(Math.random() * availableStaff.length);
-                setSelectedStaff({
-                  id: "any",
-                  name: "Cualquier Profesional",
-                  phone: null,
-                  mail: null,
-                  avatar: null,
-                  status: "ACTIVE",
-                  shopId: location.id,
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                } as Worker);
-              }}
-              className={selectedStaff?.id === "any" ? "bg-primary/10" : ""}
-            >
-              Cualquier Profesional
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {availableStaff.map((staff) => (
-              <Card
-                key={staff.id}
-                className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
-                  selectedStaff?.id === staff.id
-                    ? "ring-2 ring-primary bg-primary/5"
-                    : ""
-                }`}
-                onClick={() => handleStaffSelect(staff)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{staff.name}</h3>
-                    <p className="text-sm text-muted-foreground">Profesional</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-          {selectedStaff?.id === "any" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-4 p-4 bg-primary/5 rounded-lg"
-            >
-              <p className="text-sm text-muted-foreground">
-                Se te asignará automáticamente un profesional disponible para el horario que selecciones.
-                Todos nuestros profesionales están altamente capacitados para brindarte el mejor servicio.
+      <AnimatePresence>
+        {selectedService && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-center">👨‍💼 Selecciona el Profesional</h2>
+              <p className="text-sm text-gray-600 mt-1 text-center">
+                Elige un profesional específico o selecciona "Cualquier Profesional Disponible"
               </p>
-            </motion.div>
-          )}
-        </motion.div>
-      )}
+            </div>
 
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Card
+                  className={`p-4 cursor-pointer transition-all hover:shadow-lg border-2 ${
+                    selectedStaff?.id === "any"
+                      ? "border-primary bg-primary/5"
+                      : "border-transparent"
+                  }`}
+                  onClick={() => {
+                    setSelectedStaff({
+                      id: "any",
+                      name: "Cualquier Profesional",
+                      phone: null,
+                      mail: null,
+                      avatar: null,
+                      status: "ACTIVE",
+                      shopId: location.id,
+                      createdAt: new Date(),
+                      updatedAt: new Date(),
+                    } as Worker);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Cualquier Profesional</h3>
+                      <p className="text-sm text-gray-600">Disponible</p>
+                    </div>
+                  </div>
+                  {selectedStaff?.id === "any" && (
+                    <div className="mt-2 text-xs text-primary">
+                      Se te asignará el primer profesional disponible
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+
+              {availableStaff.map((staff) => (
+                <motion.div
+                  key={staff.id}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Card
+                    className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
+                      selectedStaff?.id === staff.id
+                        ? "ring-2 ring-primary bg-primary/5"
+                        : ""
+                    }`}
+                    onClick={() => handleStaffSelect(staff)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">{staff.name}</h3>
+                        <p className="text-sm text-gray-600">Profesional</p>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex justify-between mt-6">
+        <Button variant="outline" onClick={onBack} className="border-gray-300 text-gray-700 hover:bg-gray-100">
           Volver
         </Button>
         <Button
@@ -184,3 +202,4 @@ export function ServicesStep({
     </div>
   );
 }
+

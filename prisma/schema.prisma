@@ -179,6 +179,10 @@ model Booking {
   service Service @relation(fields: [serviceId], references: [id])
   shop    Shop    @relation(fields: [shopId], references: [id])
 
+  paymentOption String?   @default("later") // "full", "partial", "later"
+  paymentAmount Float?
+  paymentStatus String?   @default("PENDING") // "PENDING", "PAID"
+
   @@index([userId])
   @@index([workerId])
   @@index([serviceId])

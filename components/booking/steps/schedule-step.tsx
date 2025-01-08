@@ -7,25 +7,30 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock } from 'lucide-react';
 import { motion } from "framer-motion";
-import { Shop, ShopSchedule, ShopBreak, Worker } from "@prisma/client";
+import { BookingData } from "../booking-form";
+import type { Shop, ShopSchedule, ShopBreak, Worker, Service } from "@prisma/client";
 import { addMinutes, isBefore, isAfter, setHours, setMinutes } from "date-fns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle } from 'lucide-react';
+
+type ShopWithRelations = Shop & {
+  workers: Worker[];
+  schedules: ShopSchedule[];
+  breaks: ShopBreak[];
+};
 
 interface ScheduleStepProps {
   onNext: () => void;
   onBack: () => void;
-  updateBookingData: (data: { date: Date; time: string }) => void;
-  location: Shop & {
-    schedules: ShopSchedule[];
-    breaks: ShopBreak[];
-  };
+  updateBookingData: (data: Partial<BookingData>) => void;
+  location: ShopWithRelations;
   staff: Worker;
+  service: Service;
 }
 
-export function ScheduleStep({ onNext, onBack, updateBookingData, location, staff }: ScheduleStepProps) {
+export function ScheduleStep({ onNext, onBack, updateBookingData, location, staff, service }: ScheduleStepProps) {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [time, setTime] = useState<string>("");
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
@@ -68,7 +73,7 @@ export function ScheduleStep({ onNext, onBack, updateBookingData, location, staf
 
   const generateAvailableSlots = (selectedDate: Date) => {
     const daySchedule = location.schedules.find(
-      s => s.dayOfWeek === selectedDate.getDay() && s.isEnabled
+      (s: ShopSchedule) => s.dayOfWeek === selectedDate.getDay() && s.isEnabled
     );
 
     if (!daySchedule) return [];
@@ -102,7 +107,7 @@ export function ScheduleStep({ onNext, onBack, updateBookingData, location, staf
 
   const disabledDates = (date: Date) => {
     const daySchedule = location.schedules.find(
-      s => s.dayOfWeek === date.getDay()
+      (s: ShopSchedule) => s.dayOfWeek === date.getDay()
     );
     
     const today = new Date();
@@ -122,69 +127,87 @@ export function ScheduleStep({ onNext, onBack, updateBookingData, location, staf
 
   return (
     <div className="space-y-6">
+      <h2 className="text-2xl font-semibold mb-4 text-center">🗓️ Selecciona Fecha y Hora</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-primary" />
-              <h3 className="font-medium">Selecciona Fecha</h3>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-primary" />
+                <h3 className="font-medium">Selecciona Fecha</h3>
+              </div>
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="rounded-md border w-full"
+                locale={es}
+                disabled={disabledDates}
+              />
             </div>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border w-full"
-              locale={es}
-              disabled={disabledDates}
-            />
-          </div>
-        </Card>
+          </Card>
+        </motion.div>
 
-        <Card className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <h3 className="font-medium">Selecciona Hora</h3>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                <h3 className="font-medium">Selecciona Hora</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {availableSlots.map((slot) => (
+                  <motion.div
+                    key={slot}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      variant={time === slot ? "default" : "outline"}
+                      className={`w-full ${!isSlotAvailable(slot) ? "opacity-50 cursor-not-allowed" : ""}`}
+                      onClick={() => setTime(slot)}
+                      disabled={!isSlotAvailable(slot)}
+                    >
+                      {slot}
+                    </Button>
+                  </motion.div>
+                ))}
+                {availableSlots.length === 0 && date && (
+                  <div className="col-span-3 space-y-4">
+                    <p className="text-gray-500 text-center py-4">
+                      No hay horarios disponibles para este día
+                    </p>
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Horario No Disponible</AlertTitle>
+                      <AlertDescription className="space-y-2">
+                        <p>
+                          Lo sentimos, este profesional no tiene horarios disponibles para la fecha seleccionada.
+                        </p>
+                        <p>
+                          Puedes:
+                          <ul className="list-disc list-inside mt-2">
+                            <li>Seleccionar otra fecha</li>
+                            <li>Probar con otro profesional</li>
+                            <li>Elegir "Cualquier Profesional Disponible" en el paso anterior</li>
+                          </ul>
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {availableSlots.map((slot) => (
-                <Button
-                  key={slot}
-                  variant={time === slot ? "default" : "outline"}
-                  className={`w-full ${!isSlotAvailable(slot) ? "opacity-50 cursor-not-allowed" : ""}`}
-                  onClick={() => setTime(slot)}
-                  disabled={!isSlotAvailable(slot)}
-                >
-                  {slot}
-                </Button>
-              ))}
-              {availableSlots.length === 0 && date && (
-                <div className="col-span-3 space-y-4">
-                  <p className="text-muted-foreground text-center py-4">
-                    No hay horarios disponibles para este día
-                  </p>
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Horario No Disponible</AlertTitle>
-                    <AlertDescription className="space-y-2">
-                      <p>
-                        Lo sentimos, este profesional no tiene horarios disponibles para la fecha seleccionada.
-                      </p>
-                      <p>
-                        Puedes:
-                        <ul className="list-disc list-inside mt-2">
-                          <li>Seleccionar otra fecha</li>
-                          <li>Probar con otro profesional</li>
-                          <li>Elegir "Cualquier Profesional Disponible" en el paso anterior</li>
-                        </ul>
-                      </p>
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </motion.div>
       </div>
 
       <div className="flex justify-between">
@@ -200,4 +223,4 @@ export function ScheduleStep({ onNext, onBack, updateBookingData, location, staf
       </div>
     </div>
   );
-} 
+}

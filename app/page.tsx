@@ -26,7 +26,7 @@ export default async function Home() {
           <div className="flex items-center justify-center gap-2 mb-2">
             <Scissors className="h-8 w-8 text-primary animate-[spin_3s_ease-in-out_infinite]" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-blue-600 text-transparent bg-clip-text">
-              3BS Barbershop
+              Servicio de Agenda
             </h1>
           </div>
           <p className="text-gray-300 text-lg">

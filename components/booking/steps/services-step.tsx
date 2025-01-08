@@ -144,7 +144,7 @@ export function ServicesStep({
                       <User className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Cualquier Profesional</h3>
+                      <h3 className="font-medium">&quot;Cualquier Profesional&quot;</h3>
                       <p className="text-sm text-gray-600">Disponible</p>
                     </div>
                   </div>

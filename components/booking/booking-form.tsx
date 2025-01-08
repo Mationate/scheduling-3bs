@@ -135,11 +135,11 @@ export default function BookingForm({ initialData }: BookingFormProps) {
   return (
     <Card className="p-6 shadow-lg border-t-4 border-t-primary">
       <div className="mb-8">
-        <div className="flex justify-between mb-2 overflow-x-auto">
+        <div className="flex justify-between mb-2 overflow-x-auto px-2 pb-4">
           {steps.map((step) => (
             <motion.span
               key={step.id}
-              className={`text-xs sm:text-sm font-medium transition-colors duration-200 flex flex-col items-center ${
+              className={`text-[10px] sm:text-xs md:text-sm font-medium transition-colors duration-200 flex flex-col items-center min-w-[60px] sm:min-w-[80px] mx-1 ${
                 step.id === currentStep
                   ? "text-primary"
                   : step.id < currentStep
@@ -148,8 +148,10 @@ export default function BookingForm({ initialData }: BookingFormProps) {
               }`}
               whileHover={{ scale: 1.1 }}
             >
-              <span className="text-2xl mb-1">{step.emoji}</span>
-              {step.name}
+              <span className="text-xl sm:text-2xl mb-1">{step.emoji}</span>
+              <span className="text-center whitespace-normal sm:whitespace-nowrap">
+                {step.name}
+              </span>
             </motion.span>
           ))}
         </div>

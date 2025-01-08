@@ -197,7 +197,7 @@ export function ScheduleStep({ onNext, onBack, updateBookingData, location, staf
                           <ul className="list-disc list-inside mt-2">
                             <li>Seleccionar otra fecha</li>
                             <li>Probar con otro profesional</li>
-                            <li>Elegir "Cualquier Profesional Disponible" en el paso anterior</li>
+                            <li>&quot;Cualquier Profesional Disponible&quot; en el paso anterior</li>
                           </ul>
                         </p>
                       </AlertDescription>

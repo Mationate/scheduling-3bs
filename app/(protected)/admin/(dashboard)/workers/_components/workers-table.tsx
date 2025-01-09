@@ -109,9 +109,6 @@ export function WorkersDataTable({ initialData }: WorkersDataTableProps) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <Button onClick={() => router.push("/admin/workers/new")}>
-          <Plus className="mr-2 h-4 w-4" /> Agregar Trabajador
-        </Button>
       </div>
       <DataTable
         data={filteredData}

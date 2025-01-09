@@ -13,8 +13,7 @@ export default function AdminLayout({
 }) {
   return (
     <div className="min-h-screen">
-      <Navbar />
-      <main className="container py-8 ">{children}</main>
+      <main className=" ">{children}</main>
     </div>
   );
 }

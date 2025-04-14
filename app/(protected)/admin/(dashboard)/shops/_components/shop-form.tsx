@@ -202,7 +202,10 @@ export function ShopForm({ initialData }: ShopFormProps) {
                         onChange={async (url) => {
                           if (url) {
                             try {
+                              field.onChange(url);
+                              
                               if (initialData?.id) {
+                                setLoading(true);
                                 const response = await fetch(`/api/shops/${initialData.id}/image`, {
                                   method: "PATCH",
                                   headers: {
@@ -214,17 +217,15 @@ export function ShopForm({ initialData }: ShopFormProps) {
                                 if (!response.ok) {
                                   throw new Error("Error al actualizar la imagen");
                                 }
-
-                                const data = await response.json();
-                                console.log("Image update response:", data);
+                                
+                                toast.success("Imagen actualizada correctamente");
+                                router.refresh();
                               }
-
-                              field.onChange(url);
-                              toast.success("Imagen actualizada correctamente");
-                              router.refresh();
                             } catch (error) {
                               console.error("Error updating image:", error);
                               toast.error("Error al actualizar la imagen");
+                            } finally {
+                              setLoading(false);
                             }
                           }
                         }}

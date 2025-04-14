@@ -15,12 +15,16 @@ export default auth((req) => {
     const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
     const isApiPublicRoute = nextUrl.pathname.startsWith("/api/public");
     const isBookingsApi = nextUrl.pathname.startsWith("/api/bookings/");
+    const isUploadthingRoute = nextUrl.pathname.startsWith("/api/uploadthing");
+    const isAuthSessionRoute = nextUrl.pathname === "/api/auth/session";
     const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
     const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 
-    if(isApiAuthRoute || isApiPublicRoute || isBookingsApi) {
+    // Permitir todas las rutas relacionadas con autenticación y API públicas
+    if(isApiAuthRoute || isApiPublicRoute || isBookingsApi || isUploadthingRoute || isAuthSessionRoute) {
         return null;
     }
+    
     if(isAuthRoute){
         if(isLoggedIn){
             return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
@@ -33,15 +37,14 @@ export default auth((req) => {
     return null;
 })
 
-// Optionally, don't invoke Middleware on some paths
-// Read more: https://nextjs.org/docs/app/building-your-application/routing/middleware#matcher
+// Configuración del matcher para el middleware
 export const config = {
     matcher: [
         // Excluir archivos estáticos y _next
         "/((?!_next|.*\\..*).*)",
         // Incluir solo la raíz
         "/",
-        // Incluir las rutas de API excepto las públicas y auth
+        // Incluir las rutas de API excepto las que ya están manejadas por NextAuth
         "/api/:path*",
     ],
 }

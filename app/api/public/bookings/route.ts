@@ -125,16 +125,24 @@ export async function POST(req: Request) {
       // Asegurarse de que date es una cadena en formato YYYY-MM-DD
       let dateStr;
       try {
-        const dateObj = new Date(date);
-        if (isNaN(dateObj.getTime())) {
-          throw new Error(`Fecha inválida: ${date}`);
+        // Si date ya es una cadena en formato YYYY-MM-DD, usamos esa directamente
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          dateStr = date;
+          console.log("[PUBLIC_BOOKINGS_POST] Usando fecha proporcionada directamente:", dateStr);
+        } else {
+          // Si no, intentamos convertirla
+          const dateObj = new Date(date);
+          if (isNaN(dateObj.getTime())) {
+            throw new Error(`Fecha inválida: ${date}`);
+          }
+          dateStr = format(dateObj, 'yyyy-MM-dd');
+          console.log("[PUBLIC_BOOKINGS_POST] Fecha convertida:", dateStr);
         }
-        dateStr = format(dateObj, 'yyyy-MM-dd');
       } catch (e) {
         console.error("[PUBLIC_BOOKINGS_POST] Error al parsear fecha:", e);
         throw new Error(`Formato de fecha inválido: ${date}`);
       }
-      console.log("[PUBLIC_BOOKINGS_POST] Fecha formateada:", dateStr);
+      console.log("[PUBLIC_BOOKINGS_POST] Fecha final a utilizar:", dateStr);
       
       // Asegurarse de que time tiene el formato correcto (HH:mm)
       let timeStr;
@@ -179,17 +187,14 @@ export async function POST(req: Request) {
         serviceId: service.id,
         clientId: client.id,
         shopId: staff.shopId,
-        date: new Date(dateStr), // Fecha sin componente de tiempo
+        date: new Date(dateStr + "T00:00:00.000"), // Fecha con tiempo 00:00:00 para mantener la fecha correcta
         startTime: startTimeStr, // Guardando la hora en formato HH:mm
         endTime: endTimeStr,     // Guardando la hora en formato HH:mm
         status: "PENDING"
       };
       
       console.log("[PUBLIC_BOOKINGS_POST] Creando booking con datos:", bookingData);
-      console.log("[PUBLIC_BOOKINGS_POST] Formato de horas guardadas:", {
-        startTime: startTimeStr, // formato HH:mm
-        endTime: endTimeStr      // formato HH:mm
-      });
+      console.log("[PUBLIC_BOOKINGS_POST] Fecha guardada (ISO):", bookingData.date.toISOString());
 
       // Crear la reserva
       const booking = await db.booking.create({

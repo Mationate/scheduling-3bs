@@ -88,7 +88,7 @@ export async function GET(req: Request) {
     });
 
     // Para el caso de "any", necesitamos información adicional sobre los trabajadores disponibles
-    let workers = [];
+    let workers: { id: string; name: string }[] = [];
     if (workerId === "any" && shopId) {
       workers = await db.worker.findMany({
         where: {

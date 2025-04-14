@@ -179,7 +179,10 @@ export default function BookingForm({ initialData }: BookingFormProps) {
       endDate.setMinutes(endDate.getMinutes() + bookingData.service.duration);
 
       // Formatear la fecha como YYYY-MM-DD para evitar problemas de zona horaria
+      // Usamos la fecha en el formato YYYY-MM-DD extraída directamente del objeto fecha para 
+      // evitar conversiones de zona horaria automáticas
       const formattedDate = format(bookingData.date, 'yyyy-MM-dd');
+      console.log("[BOOKING_FORM] Fecha formateada para enviar:", formattedDate);
       
       // Crear versiones simplificadas de los objetos complejos
       const simplifiedService = {

@@ -90,7 +90,7 @@ const BookingCalendar = ({ workers, services, bookings, timeInterval, selectedVi
                     }}
                   >
                     <p className="font-medium text-sm">
-                      {selectedView === "workers" ? booking.service.name : booking.user.name}
+                      {selectedView === "workers" ? booking.service.name : booking.worker.name}
                     </p>
                     <p className="text-xs text-gray-500">
                       {booking.startTime} - {booking.endTime}

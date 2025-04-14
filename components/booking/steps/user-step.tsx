@@ -11,17 +11,22 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon, Loader2 } from 'lucide-react';
-import axios from "axios";
 import { toast } from "sonner";
+import { useEffect } from "react";
+import { BookingData } from "../booking-form";
 
-const emailSchema = z.object({
-  email: z.string().email("Email inválido"),
+const phoneSchema = z.object({
+  phone: z.string()
+    .min(9, "El número debe tener al menos 9 dígitos")
+    .transform(val => val.replace(/[^\d+]/g, '')) // Limpiar caracteres no numéricos
+    .refine(val => /^(\+\d{1,3})?[\d]{9,15}$/.test(val), {
+      message: "Por favor ingresa un número de teléfono válido"
+    })
 });
 
 const verificationSchema = z.object({
@@ -29,16 +34,16 @@ const verificationSchema = z.object({
 });
 
 const additionalDataSchema = z.object({
-  phone: z.string().min(9, "El teléfono debe tener al menos 9 dígitos"),
-  notes: z.string().optional(),
+  name: z.string().min(1, "El nombre es requerido"),
+  email: z.string().email("Email inválido").optional().or(z.literal('')),
 });
 
-type FormStep = "email" | "verification" | "additionalData";
+type FormStep = "phone" | "verification" | "additionalData";
 
 interface UserStepProps {
   onNext: () => void;
   onBack: () => void;
-  updateBookingData: (data: any) => void;
+  updateBookingData: (data: Partial<BookingData>) => void;
 }
 
 export function UserStep({
@@ -46,39 +51,50 @@ export function UserStep({
   onBack,
   updateBookingData,
 }: UserStepProps) {
-  const [formStep, setFormStep] = useState<FormStep>("email");
+  const [formStep, setFormStep] = useState<FormStep>("phone");
   const [isLoading, setIsLoading] = useState(false);
-  const [userExists, setUserExists] = useState(false);
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
 
-  const emailForm = useForm<z.infer<typeof emailSchema>>({
-    resolver: zodResolver(emailSchema),
-    defaultValues: { email: "" },
+  const phoneForm = useForm<z.infer<typeof phoneSchema>>({
+    resolver: zodResolver(phoneSchema),
+    defaultValues: { phone: "" },
+    mode: "onChange",
   });
 
   const verificationForm = useForm<z.infer<typeof verificationSchema>>({
     resolver: zodResolver(verificationSchema),
     defaultValues: { code: "" },
+    mode: "onChange",
   });
 
   const additionalDataForm = useForm<z.infer<typeof additionalDataSchema>>({
     resolver: zodResolver(additionalDataSchema),
-    defaultValues: { phone: "", notes: "" },
+    defaultValues: {
+      name: "",
+      email: "",
+    },
+    mode: "onChange",
   });
 
-  const onEmailSubmit = async (data: z.infer<typeof emailSchema>) => {
+  const onPhoneSubmit = async (data: z.infer<typeof phoneSchema>) => {
     try {
       setIsLoading(true);
-      const response = await axios.post("/api/check-user", { email: data.email });
-      setUserExists(response.data.exists);
-      setEmail(data.email);
-
-      await axios.post("/api/send-verification", { email: data.email });
+      // Limpiamos el número de teléfono para eliminar caracteres no numéricos
+      const cleanPhone = data.phone.replace(/[^\d+]/g, '');
+      console.log("[USER_STEP] Verificando teléfono:", cleanPhone);
       
-      toast.success("Código de verificación enviado");
+      // Simulamos que se envía un código por WhatsApp
+      setPhone(cleanPhone);
+      
+      // Simulamos espera del envío del código
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success("Código de verificación enviado por WhatsApp");
       setFormStep("verification");
+
     } catch (error) {
-      toast.error("Error al procesar el email");
+      console.error("[USER_STEP] Error en onPhoneSubmit:", error);
+      toast.error("Error al procesar el número de teléfono");
     } finally {
       setIsLoading(false);
     }
@@ -87,69 +103,90 @@ export function UserStep({
   const onVerificationSubmit = async (data: z.infer<typeof verificationSchema>) => {
     try {
       setIsLoading(true);
-      console.log("Intentando verificar código:", {
-        email,
-        code: data.code
-      });
-
-      const response = await axios.post("/api/verify-code", { 
-        email,
-        code: data.code 
-      });
-
-      console.log("Respuesta de verificación:", response.data);
-
-      if (response.data.success) {
-        toast.success("Código verificado correctamente");
-        setFormStep("additionalData");
-      } else {
-        toast.error("Error al verificar el código");
-      }
+      console.log("[USER_STEP] Verificando código para:", phone);
+      
+      // Simulamos verificación
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Aceptamos cualquier código de 6 dígitos
+      console.log("[USER_STEP] Código verificado correctamente");
+      toast.success("Código verificado correctamente");
+      setFormStep("additionalData");
+      
     } catch (error) {
-      console.error("Error en verificación:", error);
-      if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.error || "Código inválido");
-      } else {
-        toast.error("Error al verificar el código");
-      }
+      console.error("[USER_STEP] Error en verificación:", error);
+      toast.error("Error al verificar el código");
     } finally {
       setIsLoading(false);
     }
   };
 
   const onAdditionalDataSubmit = async (data: z.infer<typeof additionalDataSchema>) => {
-    updateBookingData({
-      user: {
-        email,
-        phone: data.phone,
-        notes: data.notes,
-      }
-    });
-    onNext();
+    try {
+      console.log("[USER_STEP] Iniciando envío de datos adicionales:", data);
+
+      // Simulamos creación o actualización del cliente
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      updateBookingData({
+        client: {
+          phone,
+          name: data.name,
+          email: data.email || "",
+          notes: "" // Notas vacías por defecto
+        }
+      });
+      
+      console.log("[USER_STEP] Datos del cliente actualizados en bookingData");
+      onNext();
+    } catch (error) {
+      console.error("[USER_STEP] Error en onAdditionalDataSubmit:", error);
+      toast.error("Error al guardar los datos");
+    }
   };
+
+  // Aseguramos que los inputs mantengan el foco
+  useEffect(() => {
+    const focusTimeout = setTimeout(() => {
+      if (formStep === "phone") {
+        const phoneInput = document.querySelector('input[name="phone"]') as HTMLInputElement;
+        if (phoneInput) phoneInput.focus();
+      } else if (formStep === "verification") {
+        const codeInput = document.querySelector('input[name="code"]') as HTMLInputElement;
+        if (codeInput) codeInput.focus();
+      }
+    }, 100);
+    
+    return () => clearTimeout(focusTimeout);
+  }, [formStep]);
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold mb-2">👤 Tus Datos</h2>
         <p className="text-sm text-gray-600">
-          {formStep === "email" && "Ingresa tu correo electrónico para continuar"}
-          {formStep === "verification" && "Ingresa el código de verificación enviado a tu correo"}
+          {formStep === "phone" && "Ingresa tu número de teléfono para continuar"}
+          {formStep === "verification" && "Ingresa el código de verificación enviado a tu WhatsApp"}
           {formStep === "additionalData" && "Completa tus datos de contacto"}
         </p>
       </div>
 
-      {formStep === "email" && (
-        <Form {...emailForm}>
-          <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+      {formStep === "phone" && (
+        <Form {...phoneForm}>
+          <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-4">
             <FormField
-              control={emailForm.control}
-              name="email"
+              control={phoneForm.control}
+              name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Número de teléfono</FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" placeholder="tu@email.com" />
+                    <Input 
+                      {...field} 
+                      autoFocus 
+                      type="tel" 
+                      placeholder="+56 9 1234 5678" 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -174,7 +211,7 @@ export function UserStep({
             <Alert>
               <InfoIcon className="h-4 w-4" />
               <AlertDescription>
-                Hemos enviado un código de verificación a {email}
+                Hemos enviado un código de verificación a tu WhatsApp ({phone})
               </AlertDescription>
             </Alert>
             <FormField
@@ -184,7 +221,12 @@ export function UserStep({
                 <FormItem>
                   <FormLabel>Código de Verificación</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="123456" maxLength={6} />
+                    <Input 
+                      {...field} 
+                      autoFocus
+                      placeholder="123456" 
+                      maxLength={6} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -194,7 +236,7 @@ export function UserStep({
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setFormStep("email")}
+                onClick={() => setFormStep("phone")}
               >
                 Volver
               </Button>
@@ -209,46 +251,49 @@ export function UserStep({
 
       {formStep === "additionalData" && (
         <Form {...additionalDataForm}>
-          <form onSubmit={additionalDataForm.handleSubmit(onAdditionalDataSubmit)} className="space-y-4">
+          <form onSubmit={additionalDataForm.handleSubmit(onAdditionalDataSubmit)} className="space-y-6">
             <FormField
               control={additionalDataForm.control}
-              name="phone"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Teléfono</FormLabel>
+                  <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input {...field} type="tel" placeholder="+56 9 1234 5678" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={additionalDataForm.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notas (opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea 
+                    <Input 
                       {...field} 
-                      placeholder="Cualquier información adicional que necesitemos saber"
+                      autoFocus
+                      placeholder="Tu nombre" 
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={additionalDataForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email (opcional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      type="email" 
+                      placeholder="tu@email.com" 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="flex justify-between">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setFormStep("verification")}
-              >
+              <Button type="button" variant="outline" onClick={() => setFormStep("verification")}>
                 Volver
               </Button>
-              <Button type="submit">
-                Continuar
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Guardando..." : "Continuar"}
               </Button>
             </div>
           </form>

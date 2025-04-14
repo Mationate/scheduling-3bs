@@ -1,11 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Building2, Users, Filter } from "lucide-react";
+
+interface Shop {
+  id: string;
+  name: string;
+}
 
 interface CalendarSidebarProps {
   selectedDate: Date;
@@ -24,6 +30,25 @@ export function CalendarSidebar({
   selectedView,
   onViewChange
 }: CalendarSidebarProps) {
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [isLoadingShops, setIsLoadingShops] = useState(true);
+
+  useEffect(() => {
+    const fetchShops = async () => {
+      try {
+        const response = await fetch('/api/shops');
+        const data = await response.json();
+        setShops(data);
+      } catch (error) {
+        console.error('Error fetching shops:', error);
+      } finally {
+        setIsLoadingShops(false);
+      }
+    };
+
+    fetchShops();
+  }, []);
+
   return (
     <div className="p-4 space-y-6">
       <div className="space-y-2">
@@ -51,13 +76,21 @@ export function CalendarSidebar({
               <Building2 className="w-4 h-4" />
               Local
             </Label>
-            <Select value={selectedLocation} onValueChange={onLocationChange}>
+            <Select 
+              value={selectedLocation} 
+              onValueChange={onLocationChange}
+              disabled={isLoadingShops}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Seleccionar local" />
+                <SelectValue placeholder={isLoadingShops ? "Cargando locales..." : "Seleccionar local"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">🏪 Todos los locales</SelectItem>
-                <SelectItem value="local1">💈 Local 1</SelectItem>
+                {shops.map((shop) => (
+                  <SelectItem key={shop.id} value={shop.id}>
+                    💈 {shop.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -79,38 +112,6 @@ export function CalendarSidebar({
                 <SelectItem value="services">✂️ Por Servicios</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          🎯 Vista Rápida
-        </h3>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm">Solo reservas activas</Label>
-            <Switch />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label className="text-sm">Mostrar canceladas</Label>
-            <Switch />
-          </div>
-        </div>
-      </div>
-
-      <div className="pt-4 border-t">
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium">📊 Resumen del día</h3>
-          <div className="grid grid-cols-2 gap-2">
-            <Card className="p-3">
-              <p className="text-xs text-muted-foreground">Reservas</p>
-              <p className="text-2xl font-bold text-primary">12</p>
-            </Card>
-            <Card className="p-3">
-              <p className="text-xs text-muted-foreground">Disponibles</p>
-              <p className="text-2xl font-bold text-green-500">8</p>
-            </Card>
           </div>
         </div>
       </div>

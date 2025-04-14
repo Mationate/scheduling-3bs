@@ -12,13 +12,14 @@ import ConfirmationStep from "./steps/confirmation-step";
 import { ScheduleStep } from "./steps/schedule-step";
 import { PaymentStep } from "./steps/payment-step";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const steps = [
   { id: 1, name: "Local", emoji: "🏠" },
   { id: 2, name: "Servicios", emoji: "💇" },
-  { id: 3, name: "Tus Datos", emoji: "📝" },
-  { id: 4, name: "Fecha y Hora", emoji: "🗓️" },
-  { id: 5, name: "Pago", emoji: "💳" },
+  { id: 3, name: "Fecha y Hora", emoji: "🗓️" },
+  { id: 4, name: "Pago", emoji: "💳" },
+  { id: 5, name: "Tus Datos", emoji: "📝" },
   { id: 6, name: "Confirmación", emoji: "✅" },
 ];
 
@@ -34,26 +35,35 @@ interface BookingFormProps {
   initialData: ShopWithRelations[];
 }
 
-export type BookingData = {
-  location: ShopWithRelations;
+export interface BookingData {
+  location: Shop & {
+    schedules: ShopSchedule[];
+    breaks: ShopBreak[];
+    workers: (Worker & {
+      services: Service[];
+    })[];
+  };
   service: Service;
-  staff: Worker;
-  user: {
+  staff: Worker & {
+    services: Service[];
+  };
+  client: {
     name: string;
     phone: string;
-    email?: string;
+    email: string;
     notes?: string;
   };
   date: Date;
   time: string;
   paymentOption?: "full" | "partial" | "later";
   paymentAmount?: number;
-};
+}
 
 export default function BookingForm({ initialData }: BookingFormProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingData, setBookingData] = useState<Partial<BookingData>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isAssigningWorker, setIsAssigningWorker] = useState(false);
 
   const progress = (currentStep / steps.length) * 100;
 
@@ -70,28 +80,97 @@ export default function BookingForm({ initialData }: BookingFormProps) {
   };
 
   const handleSubmit = async () => {
+    console.log("[BOOKING_FORM] Iniciando handleSubmit");
+    console.log("[BOOKING_FORM] Estado completo de bookingData:", bookingData);
+    console.log("[BOOKING_FORM] Datos del cliente:", bookingData.client);
+    
     if (!bookingData.location || !bookingData.service || !bookingData.staff || 
-        !bookingData.user || !bookingData.date || !bookingData.time) {
+        !bookingData.client || !bookingData.date || !bookingData.time) {
+      console.log("[BOOKING_FORM] Validación fallida. Datos faltantes:", {
+        location: !!bookingData.location,
+        service: !!bookingData.service,
+        staff: !!bookingData.staff,
+        client: !!bookingData.client,
+        date: !!bookingData.date,
+        time: !!bookingData.time
+      });
       toast.error("Faltan datos requeridos");
+      return;
+    }
+
+    if (!bookingData.client.phone) {
+      toast.error("El número de teléfono es obligatorio");
       return;
     }
 
     try {
       setIsLoading(true);
+      console.log("[BOOKING_FORM] Preparando datos para enviar:", {
+        phone: bookingData.client.phone,
+        name: bookingData.client.name,
+        email: bookingData.client.email || ""
+      });
 
-      const availabilityResponse = await fetch(`/api/availability?date=${bookingData.date.toISOString()}&workerId=${bookingData.staff.id}&time=${bookingData.time}`);
+      // Verificar si necesitamos encontrar un profesional disponible (caso "any")
+      let staffToUse = bookingData.staff;
       
-      if (!availabilityResponse.ok) {
-        throw new Error("Error al verificar disponibilidad");
+      if (bookingData.staff.id === "any") {
+        setIsAssigningWorker(true);
+        console.log("[BOOKING_FORM] Buscando profesional disponible para 'Cualquier Profesional Disponible'");
+        
+        const dateParam = format(bookingData.date, 'yyyy-MM-dd');
+        const availabilityResponse = await fetch(
+          `/api/bookings/available?date=${dateParam}&workerId=any&time=${bookingData.time}&shopId=${bookingData.location.id}&serviceId=${bookingData.service.id}`
+        );
+        
+        if (!availabilityResponse.ok) {
+          throw new Error(`Error al verificar disponibilidad: ${availabilityResponse.status}`);
+        }
+        
+        const availabilityData = await availabilityResponse.json();
+        console.log("[BOOKING_FORM] Respuesta de búsqueda de profesional:", availabilityData);
+        
+        if (!availabilityData.available || !availabilityData.suggestedWorker) {
+          setIsAssigningWorker(false);
+          toast.error(availabilityData.error || "No hay profesionales disponibles para este horario");
+          return;
+        }
+        
+        // Usar el profesional sugerido
+        staffToUse = availabilityData.suggestedWorker;
+        console.log("[BOOKING_FORM] Se asignará el profesional:", staffToUse.name);
+        
+        // Actualizar el estado del bookingData con el profesional asignado
+        const updatedStaff = {
+          ...staffToUse,
+          shopId: bookingData.location.id
+        };
+        
+        updateBookingData({ staff: updatedStaff });
+        setIsAssigningWorker(false);
+      } else {
+        // Verificar disponibilidad para el profesional específico
+        const dateParam = format(bookingData.date, 'yyyy-MM-dd');
+        console.log(`[BOOKING_FORM] Verificando disponibilidad para: fecha=${dateParam}, trabajador=${bookingData.staff.id}, hora=${bookingData.time}`);
+        
+        const availabilityResponse = await fetch(`/api/bookings/available?date=${dateParam}&workerId=${bookingData.staff.id}&time=${bookingData.time}&serviceId=${bookingData.service.id}`);
+        
+        console.log(`[BOOKING_FORM] Respuesta de disponibilidad: status=${availabilityResponse.status}`);
+        
+        if (!availabilityResponse.ok) {
+          throw new Error(`Error al verificar disponibilidad: ${availabilityResponse.status}`);
+        }
+
+        const availabilityData = await availabilityResponse.json();
+        console.log("[BOOKING_FORM] Datos de disponibilidad:", availabilityData);
+        
+        if (!availabilityData.available) {
+          toast.error(availabilityData.error || "El horario seleccionado ya no está disponible");
+          return;
+        }
       }
 
-      const { available } = await availabilityResponse.json();
-      
-      if (!available) {
-        toast.error("El horario seleccionado ya no está disponible");
-        return;
-      }
-
+      // Preparar datos para la reserva
       const [hours, minutes] = bookingData.time.split(':');
       const startDate = new Date(bookingData.date);
       startDate.setHours(parseInt(hours), parseInt(minutes));
@@ -99,37 +178,89 @@ export default function BookingForm({ initialData }: BookingFormProps) {
       const endDate = new Date(startDate);
       endDate.setMinutes(endDate.getMinutes() + bookingData.service.duration);
 
-      const response = await fetch("/api/bookings", {
+      // Formatear la fecha como YYYY-MM-DD para evitar problemas de zona horaria
+      const formattedDate = format(bookingData.date, 'yyyy-MM-dd');
+      
+      // Crear versiones simplificadas de los objetos complejos
+      const simplifiedService = {
+        id: bookingData.service.id,
+        name: bookingData.service.name,
+        price: bookingData.service.price,
+        duration: bookingData.service.duration
+      };
+      
+      // Usar el profesional asignado (puede ser el original o uno encontrado para "any")
+      const simplifiedStaff = {
+        id: staffToUse.id,
+        name: staffToUse.name,
+        shopId: bookingData.location.id
+      };
+      
+      // Intentar primero con /api/public/bookings con datos simplificados
+      const requestBody = {
+        service: simplifiedService,
+        staff: simplifiedStaff,
+        date: formattedDate,
+        time: bookingData.time,
+        userData: {
+          name: bookingData.client.name,
+          phone: bookingData.client.phone,
+          email: bookingData.client.email || "",
+          notes: bookingData.client.notes || ""
+        }
+      };
+
+      console.log("[BOOKING_FORM] Enviando request con body:", JSON.stringify(requestBody));
+
+      const response = await fetch("/api/public/bookings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: bookingData.date,
-          startTime: bookingData.time,
-          endTime: `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`,
-          workerId: bookingData.staff.id,
-          serviceId: bookingData.service.id,
-          shopId: bookingData.location.id,
-          userName: bookingData.user.name,
-          userPhone: bookingData.user.phone,
-          userEmail: bookingData.user.email,
-          notes: bookingData.user.notes
-        }),
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(requestBody),
       });
 
+      console.log(`[BOOKING_FORM] Respuesta de API: status=${response.status}`);
+      
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
+        // Intenta obtener el texto del error
+        let errorText;
+        try {
+          errorText = await response.text();
+          console.error(`[BOOKING_FORM] Error en respuesta API: ${errorText}`);
+        } catch (e) {
+          console.error(`[BOOKING_FORM] No se pudo leer el texto del error: ${e}`);
+          errorText = "Error desconocido al crear la reserva";
+        }
+        throw new Error(errorText || "Error al crear la reserva");
       }
 
+      // Intenta parsear la respuesta como JSON
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log("[BOOKING_FORM] Reserva creada exitosamente:", responseData);
+      } catch (e) {
+        console.error(`[BOOKING_FORM] Error al parsear respuesta JSON: ${e}`);
+        // Si no podemos parsear JSON, al menos hemos tenido una respuesta exitosa
+        responseData = { success: true };
+      }
+      
       toast.success("Reserva creada exitosamente");
-      setBookingData({});
-      setCurrentStep(1);
+      return responseData;
     } catch (error) {
-      console.error('Error creating booking:', error);
-      toast.error(error instanceof Error ? error.message : "Error al crear la reserva");
+      console.error('[BOOKING_FORM] Error creating booking:', error);
+      setIsAssigningWorker(false);
+      throw error; // Re-lanzamos el error para que lo maneje el componente de confirmación
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setBookingData({});
+    setCurrentStep(1);
   };
 
   return (
@@ -182,14 +313,7 @@ export default function BookingForm({ initialData }: BookingFormProps) {
               location={bookingData.location}
             />
           )}
-          {currentStep === 3 && (
-            <UserStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateBookingData={updateBookingData}
-            />
-          )}
-          {currentStep === 4 && bookingData.location && bookingData.staff && bookingData.service && (
+          {currentStep === 3 && bookingData.location && bookingData.staff && bookingData.service && (
             <ScheduleStep
               onNext={handleNext}
               onBack={handleBack}
@@ -199,7 +323,7 @@ export default function BookingForm({ initialData }: BookingFormProps) {
               service={bookingData.service}
             />
           )}
-          {currentStep === 5 && bookingData.service && (
+          {currentStep === 4 && bookingData.service && (
             <PaymentStep
               onNext={handleNext}
               onBack={handleBack}
@@ -207,14 +331,23 @@ export default function BookingForm({ initialData }: BookingFormProps) {
               updateBookingData={updateBookingData}
             />
           )}
+          {currentStep === 5 && (
+            <UserStep
+              onNext={handleNext}
+              onBack={handleBack}
+              updateBookingData={updateBookingData}
+            />
+          )}
           {currentStep === 6 && bookingData.location && bookingData.service && 
-           bookingData.staff && bookingData.user && bookingData.date && 
+           bookingData.staff && bookingData.client && bookingData.date && 
            bookingData.time && bookingData.paymentOption && (
             <ConfirmationStep
               onBack={handleBack}
               bookingData={bookingData as BookingData}
               onConfirm={handleSubmit}
               isLoading={isLoading}
+              isAssigningWorker={isAssigningWorker}
+              resetForm={resetForm}
             />
           )}
         </motion.div>

@@ -40,4 +40,34 @@ export async function POST(
     console.error("[WORKER_SERVICES_POST]", error);
     return new NextResponse("Internal Error", { status: 500 });
   }
+}
+
+export async function GET(
+  req: Request,
+  { params }: { params: { workerId: string } }
+) {
+  try {
+    const worker = await db.worker.findUnique({
+      where: { id: params.workerId },
+      include: {
+        services: {
+          select: {
+            id: true,
+            name: true,
+            duration: true,
+            price: true
+          }
+        }
+      }
+    });
+
+    if (!worker) {
+      return new NextResponse("Trabajador no encontrado", { status: 404 });
+    }
+
+    return NextResponse.json(worker.services);
+  } catch (error) {
+    console.error("[WORKER_SERVICES_GET]", error);
+    return new NextResponse("Error interno", { status: 500 });
+  }
 } 

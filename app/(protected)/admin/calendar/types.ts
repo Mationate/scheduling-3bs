@@ -4,8 +4,8 @@ export interface Booking {
   startTime: string;
   endTime: string;
   status: string;
-  user: {
-    name: string;
+  client: {
+    name: string | null;
     email: string;
     phone?: string;
   };

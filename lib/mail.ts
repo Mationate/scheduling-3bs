@@ -1,7 +1,7 @@
+import { BookingConfirmationEmail, BookingConfirmationEmailProps } from "@/emails/booking-confirmation";
 import {Resend} from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
 export const sendTwoFactorTokenEmail = async (
     email:string,
     token:string
@@ -108,3 +108,22 @@ export const sendVerificationEmail = async (
         html: `<p> Click <a href="${confirmLink}">aquí</a> para confirmar tu correo</p>`,
     });
 }
+
+export const sendBookingConfirmationEmail = async (
+  email: string,
+  data: BookingConfirmationEmailProps
+) => {
+  try {
+    console.log("[MAIL_SERVICE] Enviando correo de confirmación a:", email);
+    await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: email,
+      subject: "¡Tu reserva está confirmada! - 3BS Barbershop",
+      html: BookingConfirmationEmail(data),
+    });
+    console.log("[MAIL_SERVICE] Correo enviado exitosamente");
+  } catch (error) {
+    console.error("[MAIL_SERVICE] Error al enviar correo:", error);
+    throw error;
+  }
+};

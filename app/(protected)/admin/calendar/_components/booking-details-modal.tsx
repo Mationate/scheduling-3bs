@@ -72,15 +72,15 @@ export function BookingDetailsModal({
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div className="space-y-1">
-                  <p className="font-medium">{booking.user.name}</p>
+                  <p className="font-medium">{booking.client.name}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Mail className="h-3 w-3" />
-                    {booking.user.email}
+                    {booking.client.email}
                   </div>
-                  {booking.user.phone && (
+                  {booking.client.phone && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Phone className="h-3 w-3" />
-                      {booking.user.phone}
+                      {booking.client.phone}
                     </div>
                   )}
                 </div>

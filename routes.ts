@@ -10,6 +10,9 @@ export const publicRoutes = [
     "/new-password",
 ]
 
+// Las rutas de API pública se manejan directamente en el middleware
+// No es necesario listarlas aquí, ya que se filtran por prefijo
+
 /**
  * Array de rutas privadas
  * Requieren autenticación
@@ -31,4 +34,4 @@ export const apiAuthPrefix = "/api/auth"
 /**
  * Ruta de redirección por defecto al iniciar sesión
  */
-export const DEFAULT_LOGIN_REDIRECT = "/settings"
+export const DEFAULT_LOGIN_REDIRECT = "/admin"

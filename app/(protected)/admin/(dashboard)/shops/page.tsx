@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { format } from "date-fns";
 import { ShopsDataTable } from "./_components/shops-table";
 import { Button } from "@/components/ui/button";
-import { Plus, Filter } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 

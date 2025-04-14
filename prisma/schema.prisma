@@ -46,7 +46,6 @@ model User {
   role          UserRole @default(USER)
   accounts      Account[]
   shops         Shop[]
-  bookings  Booking[]
   isTwoFactorEnabled Boolean @default(false)
   twoFactorConfirmation TwoFactorConfirmation?
 }
@@ -98,11 +97,12 @@ model Shop {
   updatedAt   DateTime @updatedAt
   userId     String
   workers     Worker[]
-    schedules ShopSchedule[]
-  breaks    ShopBreak[]
-  bookings  Booking[]
+  schedules   ShopSchedule[]
+  breaks      ShopBreak[]
+  bookings    Booking[]
+  arrivals    WorkerArrival[]
+  incomes     Income[]
 }
-
 
 model ShopSchedule {
   id        String   @id @default(cuid())
@@ -130,7 +130,6 @@ enum WorkerStatus {
   UNASSIGNED
 }
 
-
 model Worker {
   id          String   @id @default(cuid())
   name        String
@@ -142,9 +141,10 @@ model Worker {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   shopId      String?
-  // Nueva relación
   services    Service[] @relation("WorkerToService")
   bookings    Booking[]
+  arrivals    WorkerArrival[]
+  incomes     Income[]
 }
 
 model Service {
@@ -159,32 +159,90 @@ model Service {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   workers     Worker[] @relation("WorkerToService")
+  incomes     Income[]
+}
+
+model Client {
+  id            String    @id @default(cuid())
+  name          String?
+  lastName      String?
+  email         String    @unique
+  phone         String?
+  rut           String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bookings      Booking[]
+  notes         String?
+  lastVisit     DateTime?
+  totalVisits   Int       @default(0)
+  status        String    @default("ACTIVE")
 }
 
 model Booking {
-  id        String   @id @default(cuid())
-  date      DateTime
-  startTime String
-  endTime   String
-  status    String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
-  userId    String
-  workerId  String
-  serviceId String
-  shopId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  date          DateTime
+  startTime     String
+  endTime       String
+  status        String   @default("PENDING")
+  clientId      String
+  workerId      String
+  serviceId     String
+  shopId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  user    User    @relation(fields: [userId], references: [id])
-  worker  Worker  @relation(fields: [workerId], references: [id])
-  service Service @relation(fields: [serviceId], references: [id])
-  shop    Shop    @relation(fields: [shopId], references: [id])
+  client        Client   @relation(fields: [clientId], references: [id])
+  worker        Worker   @relation(fields: [workerId], references: [id])
+  service       Service  @relation(fields: [serviceId], references: [id])
+  shop          Shop     @relation(fields: [shopId], references: [id])
 
-  paymentOption String?   @default("later") // "full", "partial", "later"
+  paymentOption String?  @default("later")
   paymentAmount Float?
-  paymentStatus String?   @default("PENDING") // "PENDING", "PAID"
+  paymentStatus String?  @default("PENDING")
 
-  @@index([userId])
+  @@index([clientId])
   @@index([workerId])
   @@index([serviceId])
   @@index([shopId])
+}
+
+model WorkerArrival {
+  id          String   @id @default(cuid())
+  date        DateTime
+  arrivalTime String
+  isLate      Boolean
+  notes       String?
+  workerId    String
+  shopId      String
+  createdAt   DateTime @default(now())
+
+  worker      Worker   @relation(fields: [workerId], references: [id])
+  shop        Shop     @relation(fields: [shopId], references: [id])
+
+  @@index([workerId])
+  @@index([shopId])
+}
+
+model Income {
+  id           String   @id @default(cuid())
+  date         DateTime
+  ticketNumber String
+  amount       Int
+  paymentMethod String  // Este campo será "split" cuando el pago esté dividido
+  cardAmount   Int?     // Monto pagado con tarjeta
+  cashAmount   Int?     // Monto pagado en efectivo
+  shopId       String
+  workerId     String
+  serviceId    String
+  observation  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  shop         Shop     @relation(fields: [shopId], references: [id])
+  worker       Worker   @relation(fields: [workerId], references: [id])
+  service      Service  @relation(fields: [serviceId], references: [id])
+
+  @@index([shopId])
+  @@index([workerId])
+  @@index([serviceId])
 }

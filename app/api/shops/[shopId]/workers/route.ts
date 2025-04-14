@@ -27,4 +27,27 @@ export async function POST(
     console.error("[SHOP_WORKERS_POST]", error);
     return new NextResponse("Internal Error", { status: 500 });
   }
+}
+
+export async function GET(
+  req: Request,
+  { params }: { params: { shopId: string } }
+) {
+  try {
+    const workers = await db.worker.findMany({
+      where: {
+        shopId: params.shopId,
+        status: "ACTIVE"
+      },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+
+    return NextResponse.json(workers);
+  } catch (error) {
+    console.error("[SHOP_WORKERS_GET]", error);
+    return new NextResponse("Internal error", { status: 500 });
+  }
 } 

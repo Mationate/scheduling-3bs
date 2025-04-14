@@ -27,14 +27,17 @@ export async function POST(req: Request) {
 export async function GET() {
   try {
     const services = await db.service.findMany({
+      select: {
+        id: true,
+        name: true
+      },
       orderBy: {
         name: 'asc'
       }
     });
-
     return NextResponse.json(services);
   } catch (error) {
     console.error("[SERVICES_GET]", error);
-    return NextResponse.json([], { status: 500 });
+    return new NextResponse("Internal error", { status: 500 });
   }
 } 

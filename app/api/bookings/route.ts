@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { startOfDay, addDays } from "date-fns";
+import { startOfDay, addDays, endOfDay, parseISO, isWithinInterval, format } from "date-fns";
+import { sendBookingConfirmationEmail } from "@/lib/mail";
 
 interface PrismaError {
   code?: string;
@@ -10,94 +11,113 @@ interface PrismaError {
 
 export async function POST(req: Request) {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    const body = await req.json();
+    const { workerId, serviceId, date, startTime, clientName, clientEmail, clientPhone } = body;
+
+    // Validar datos requeridos
+    if (!workerId || !serviceId || !date || !startTime || !clientName || !clientEmail) {
+      return new NextResponse("Faltan datos requeridos", { status: 400 });
     }
 
-    const body = await req.json();
-
-    // Verificar que el worker existe
-    const worker = await db.worker.findUnique({
-      where: { id: body.workerId }
+    // Primero, buscar o crear el cliente
+    const client = await db.client.upsert({
+      where: { email: clientEmail },
+      update: {
+        name: clientName,
+        phone: clientPhone || undefined,
+      },
+      create: {
+        email: clientEmail,
+        name: clientName,
+        phone: clientPhone || undefined,
+      },
     });
 
-    if (!worker) {
-      return new NextResponse("Worker not found", { status: 404 });
-    }
-
-    // Verificar que el servicio existe
+    // Obtener duración del servicio
     const service = await db.service.findUnique({
-      where: { id: body.serviceId }
+      where: { id: serviceId }
     });
 
     if (!service) {
-      return new NextResponse("Service not found", { status: 404 });
+      return new NextResponse("Servicio no encontrado", { status: 404 });
     }
 
-    // Verificar que la tienda existe
-    const shop = await db.shop.findUnique({
-      where: { id: body.shopId }
-    });
+    const startDateTime = new Date(`${date}T${startTime}`);
+    const endDateTime = new Date(startDateTime.getTime() + service.duration * 60000);
 
-    if (!shop) {
-      return new NextResponse("Shop not found", { status: 404 });
-    }
-
-    // Verificar si ya existe una reserva para ese horario
-    const existingBooking = await db.booking.findFirst({
+    // Verificar si hay bookings existentes que se solapan
+    const existingBookings = await db.booking.findMany({
       where: {
-        workerId: body.workerId,
-        date: new Date(body.date),
-        startTime: body.startTime,
-        status: {
-          not: "CANCELLED"
-        }
+        workerId,
+        NOT: { status: "CANCELLED" },
+        OR: [
+          {
+            AND: [
+              { startTime: { lte: endDateTime.toISOString() } },
+              { endTime: { gt: startDateTime.toISOString() } }
+            ]
+          }
+        ]
       }
     });
 
-    if (existingBooking) {
-      return new NextResponse("Este horario ya no está disponible", { status: 400 });
+    if (existingBookings.length > 0) {
+      return new NextResponse(
+        "El profesional ya tiene una reserva en este horario", 
+        { status: 409 }
+      );
     }
 
+    // Verificar horario de trabajo del profesional
+    const worker = await db.worker.findUnique({
+      where: { id: workerId },
+      include: { shop: true }
+    });
+
+    if (!worker || !worker.shop) {
+      return new NextResponse("Profesional no encontrado", { status: 404 });
+    }
+
+    // Crear el booking
     const booking = await db.booking.create({
       data: {
-        userId: user.id,
-        workerId: body.workerId,
-        serviceId: body.serviceId,
-        shopId: body.shopId,
-        date: new Date(body.date),
-        startTime: body.startTime,
-        endTime: body.endTime,
-        status: "PENDING",
-        // Otros campos que necesites
+        workerId,
+        serviceId,
+        clientId: client.id,
+        shopId: worker.shop.id,
+        date: new Date(date),
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        status: "PENDING"
       },
       include: {
-        service: true,
+        client: true,
         worker: true,
-        shop: true,
+        service: true
       }
     });
 
-    // TODO: Enviar email
-    // await sendBookingConfirmationEmail({
-    //   to: user.email,
-    //   booking: {
-    //     service: booking.service.name,
-    //     worker: booking.worker.name,
-    //     shop: booking.shop.name,
-    //     date: format(booking.date, "PPP", { locale: es }),
-    //     time: booking.startTime
-    //   }
-    // });
+
+    // Enviar email de confirmación
+    await sendBookingConfirmationEmail(client.email, {
+      name: client.name || "Cliente",
+      service: service.name || "Servicio",
+      worker: worker.name || "Profesional",
+      date: new Date(date),
+      time: format(startDateTime, "HH:mm"),
+      shop: worker.shop.name || "3BS Barbershop",
+      address: worker.shop.address || "Dirección no especificada",
+      duration: service.duration,
+      price: service.price
+    });
 
     return NextResponse.json(booking);
-  } catch (error: unknown) {
-    const prismaError = error as PrismaError;
+
+  } catch (error) {
     console.error("[BOOKINGS_POST]", error);
     return new NextResponse(
-      prismaError.message || "Internal Error", 
-      { status: prismaError.code === 'P2003' ? 400 : 500 }
+      error instanceof Error ? error.message : "Error interno del servidor", 
+      { status: 500 }
     );
   }
 }
@@ -120,12 +140,12 @@ export async function GET(req: Request) {
         }
       },
       include: {
-        user: true,
+        client: true,
         service: true,
         worker: true
       }
     });
-
+    console.log("[BOOKINGS_GET] Bookings fetched:", bookings);
     return NextResponse.json(bookings);
   } catch (error) {
     console.error("[BOOKINGS_GET]", error);

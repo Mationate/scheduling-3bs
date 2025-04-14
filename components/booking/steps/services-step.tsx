@@ -15,10 +15,19 @@ type ShopWithRelations = Shop & {
 };
 
 interface ServicesStepProps {
-  location: ShopWithRelations;
+  location: Shop & {
+    workers: (Worker & {
+      services: Service[];
+    })[];
+  };
   onNext: () => void;
   onBack: () => void;
-  updateBookingData: (data: { service: Service; staff: Worker }) => void;
+  updateBookingData: (data: {
+    service: Service;
+    staff: Worker & {
+      services: Service[];
+    };
+  }) => void;
 }
 
 export function ServicesStep({
@@ -28,7 +37,7 @@ export function ServicesStep({
   updateBookingData,
 }: ServicesStepProps) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [selectedStaff, setSelectedStaff] = useState<Worker | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<Worker & { services: Service[] } | null>(null);
 
   const uniqueServices = Array.from(
     new Map(
@@ -41,7 +50,10 @@ export function ServicesStep({
   const availableStaff = selectedService
     ? location.workers.filter(worker =>
         worker.services.some(service => service.id === selectedService.id)
-      )
+      ).map(staff => ({
+        ...staff,
+        services: staff.services.filter(s => s.id === selectedService.id)
+      }))
     : [];
 
   const handleServiceSelect = (service: Service) => {
@@ -49,7 +61,7 @@ export function ServicesStep({
     setSelectedStaff(null);
   };
 
-  const handleStaffSelect = (staff: Worker) => {
+  const handleStaffSelect = (staff: Worker & { services: Service[] }) => {
     setSelectedStaff(staff);
   };
 
@@ -136,7 +148,8 @@ export function ServicesStep({
                       shopId: location.id,
                       createdAt: new Date(),
                       updatedAt: new Date(),
-                    } as Worker);
+                      services: [selectedService!],
+                    } as Worker & { services: Service[] });
                   }}
                 >
                   <div className="flex items-center gap-3">
@@ -168,7 +181,7 @@ export function ServicesStep({
                         ? "ring-2 ring-primary bg-primary/5"
                         : ""
                     }`}
-                    onClick={() => handleStaffSelect(staff)}
+                    onClick={() => handleStaffSelect(staff as Worker & { services: Service[] })}
                   >
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">

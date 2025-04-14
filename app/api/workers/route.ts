@@ -31,22 +31,23 @@ export async function POST(
   }
 }
 
-export async function GET(
-  req: Request,
-) {
+export async function GET() {
   try {
     const workers = await db.worker.findMany({
       where: {
         status: "ACTIVE"
       },
-      orderBy: {
-        createdAt: 'desc',
+      select: {
+        id: true,
+        name: true
       },
+      orderBy: {
+        name: 'asc'
+      }
     });
-
     return NextResponse.json(workers);
   } catch (error) {
-    console.log("[WORKERS_GET]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("[WORKERS_GET]", error);
+    return new NextResponse("Internal error", { status: 500 });
   }
 }

@@ -151,7 +151,7 @@ export default function CalendarPage() {
     
     const transformedBooking = {
       Id: booking.id,
-      Subject: viewType === "services" ? booking.user.name : booking.service.name,
+      Subject: "Reserva",
       StartTime: startTime,
       EndTime: endTime,
       IsAllDay: false,

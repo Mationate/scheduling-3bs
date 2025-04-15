@@ -10,12 +10,29 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+    
+    // Extraer workerId si existe
+    const { workerId, ...serviceData } = body;
+    
+    // Crear el servicio
     const service = await db.service.create({
       data: {
-        ...body,
-        ownerId: user.id,
+        ...serviceData,
+        ownerId: serviceData.ownerId || user.id,
       },
     });
+    
+    // Si se proporciona workerId, conectar el servicio con el trabajador
+    if (workerId) {
+      await db.worker.update({
+        where: { id: workerId },
+        data: {
+          services: {
+            connect: { id: service.id }
+          }
+        }
+      });
+    }
 
     return NextResponse.json(service);
   } catch (error) {
@@ -24,8 +41,31 @@ export async function POST(req: Request) {
   }
 } 
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const name = searchParams.get('name');
+
+    // Si hay un parámetro de nombre, buscar servicios que coincidan
+    if (name) {
+      const services = await db.service.findMany({
+        where: {
+          name: {
+            contains: name,
+            mode: 'insensitive'
+          }
+        },
+        include: {
+          workers: true,
+        },
+        orderBy: {
+          name: 'asc'
+        }
+      });
+      return NextResponse.json(services);
+    }
+
+    // Si no hay nombre, retornar todos los servicios
     const services = await db.service.findMany({
       select: {
         id: true,

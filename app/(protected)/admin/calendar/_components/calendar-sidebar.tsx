@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Building2, Users, Filter } from "lucide-react";
+import { Building2, Filter } from "lucide-react";
 
 interface Shop {
   id: string;
@@ -20,6 +18,7 @@ interface CalendarSidebarProps {
   onLocationChange: (value: string) => void;
   selectedView: "workers" | "services";
   onViewChange: (value: "workers" | "services") => void;
+  shops: Shop[];
 }
 
 export function CalendarSidebar({
@@ -28,26 +27,10 @@ export function CalendarSidebar({
   selectedLocation,
   onLocationChange,
   selectedView,
-  onViewChange
+  onViewChange,
+  shops
 }: CalendarSidebarProps) {
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [isLoadingShops, setIsLoadingShops] = useState(true);
-
-  useEffect(() => {
-    const fetchShops = async () => {
-      try {
-        const response = await fetch('/api/shops');
-        const data = await response.json();
-        setShops(data);
-      } catch (error) {
-        console.error('Error fetching shops:', error);
-      } finally {
-        setIsLoadingShops(false);
-      }
-    };
-
-    fetchShops();
-  }, []);
+  const isLoadingShops = shops.length === 0;
 
   return (
     <div className="p-4 space-y-6">
@@ -85,7 +68,6 @@ export function CalendarSidebar({
                 <SelectValue placeholder={isLoadingShops ? "Cargando locales..." : "Seleccionar local"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">🏪 Todos los locales</SelectItem>
                 {shops.map((shop) => (
                   <SelectItem key={shop.id} value={shop.id}>
                     💈 {shop.name}

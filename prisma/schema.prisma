@@ -190,6 +190,7 @@ model Booking {
   shopId        String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  notes         String?  // Campo para registrar notas, motivos de cancelación o bloqueo
 
   client        Client   @relation(fields: [clientId], references: [id])
   worker        Worker   @relation(fields: [workerId], references: [id])
